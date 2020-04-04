@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Housie</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+    <style>
+        table, tr>td{
+            border: 2px solid indigo;
+        }
+        .highlight-picked-num{
+            color: blue;
+            font-size: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="vue-main">
+        <v-app>
+            <v-container>
+                <center>
+                    <h1>Housie Board</h1><br>
+                    <div>
+                        <v-btn color="primary" @click="pickANumber()">Generate Number</v-btn>
+                        <v-btn color="primary" @click="resetColors()">Reset Board</v-btn>
+                    </div><br><br>
+                    <div>
+                        <span :id="'prev-'+index" v-for="(num,index) in previousNumbers" :class="index == (previousNumbers.length-1)? 'highlight-picked-num' : ''">
+                            {{num}}
+                        </span>
+                    </div><br><br>
+                    <v-simple-table>
+                        <template>
+                            <tr v-for="i in numberSequence">
+                                <td :id="j" class="cell pa-6 text-center" v-for="j in i">
+                                    <span>{{j}}</span>
+                                </td>
+                            </tr>
+                        </template>
+                    </v-simple-table><br>
+                    <p>Created by - <span class="font-italic font-weight-black">ARJUN MAMIDI</span></p>
+                </center>
+            </v-container>
+        </v-app>
+    </div>
+    <script>
+        var vm = new Vue({
+            el: '#vue-main',
+            vuetify: new Vuetify(),
+            created() {
+                let num = 0;
+                let internalArray = [];
+                for(var i=0;i<9;i++){
+                    for(var j=0;j<10;j++){
+                        num++;
+                        internalArray.push(num);                        
+                    }
+                    this.numberSequence[i] = internalArray;
+                    internalArray = [];
+                }
+                this.numbersArray = this.createNumbersArray(1, 90);
+            },
+            data() {
+                return {
+                    number: 0,
+                    numberSequence: [],
+                    numbersArray: [],
+                    previousNumbers: [],
+                }
+            },
+            methods: {
+                getRandomNumber(min, max){
+                    let step1 = max-min+1;
+                    let step2 = Math.random()*step1;
+                    let result = Math.floor(step2)+min;
+                    return result;
+                },
+                createNumbersArray(start, end){
+                    let arr = [];
+                    for(let i = start; i <= end; i++){
+                        arr.push(i);
+                    }
+                    return arr;
+                },
+                pickANumber(){
+                    var self = this;
+                    if(self.numbersArray.length){
+                        let index = this.getRandomNumber(0,self.numbersArray.length-1);
+                        let randomNumber = self.numbersArray[index];
+                        self.numbersArray.splice(index, 1);
+                        self.previousNumbers.push(randomNumber);
+                        document.getElementById(randomNumber).style.background = 'rgba(202, 184, 250, 0.59)';
+                    } else{
+                       window.alert('Game Completed!!!!!!');
+                    }
+                },
+                resetColors(){
+                    const ask = confirm('Are you sure?');
+                    if(ask){
+                        const list = document.querySelectorAll('.cell');
+                        list.forEach((element) => {
+                            element.style.background = 'white';
+                        });
+                        this.numbersArray = this.createNumbersArray(1, 90);
+                        this.previousNumbers = [];
+                    }
+                }
+            }
+        })
+    </script>
+</body>
+</html>
