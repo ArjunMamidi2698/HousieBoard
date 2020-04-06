@@ -33,7 +33,7 @@
                         <v-btn color="primary" @click="pickANumber()">Generate Number</v-btn>
                         <v-btn color="primary" @click="generateTicket()">Generate Ticket</v-btn>
                         <v-btn color="primary" @click="resetColors()">Reset Board</v-btn>
-                    </div>
+                    </div><br>
                     <div>
                         <span :id="'prev-'+index" v-for="(num,index) in previousNumbers" :class="index == (previousNumbers.length-1)? 'highlight-picked-num' : ''">
                             {{num}}
@@ -134,8 +134,10 @@
                     }
                 },
                 generateTicket(){
+                    //TODO - restrict repeated numbers and display numbers in sequence
                     var self = this;
                     self.showTicket = true;
+                    self.ticket = [];
                     for(let i=0;i<3;i++){
                         self.ticket.push(self.getRow());
                     }
