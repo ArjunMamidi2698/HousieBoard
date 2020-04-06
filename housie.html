@@ -18,6 +18,9 @@
             color: blue;
             font-size: 2rem;
         }
+        .v-dialog__container{
+            display: block !important;
+        }
     </style>
 </head>
 <body>
@@ -28,6 +31,7 @@
                     <h1>Housie Board</h1><br>
                     <div>
                         <v-btn color="primary" @click="pickANumber()">Generate Number</v-btn>
+                        <v-btn color="primary" @click="generateTicket()">Generate Ticket</v-btn>
                         <v-btn color="primary" @click="resetColors()">Reset Board</v-btn>
                     </div><br><br>
                     <div>
@@ -44,6 +48,22 @@
                             </tr>
                         </template>
                     </v-simple-table><br>
+                    <v-dialog v-model="showTicket" width="500" height="500">
+                        <v-card class="pa-3 text-center">
+                            <span class="font-weight-black">Housie Ticket - {{Math.floor(Math.random()*500)}}</span><br>
+                            <v-simple-table>
+                                <template>
+                                    <tr v-for="i in ticket">
+                                        <td v-for="j in i">
+                                            <span v-if="j!=-1">
+                                                {{j}}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </v-simple-table>
+                        </v-card>
+                    </v-dialog>
                     <p>Created by - <span class="font-italic font-weight-black">ARJUN MAMIDI</span></p>
                 </center>
             </v-container>
@@ -72,6 +92,8 @@
                     numberSequence: [],
                     numbersArray: [],
                     previousNumbers: [],
+                    showTicket: false,
+                    ticket: [],
                 }
             },
             methods: {
@@ -110,6 +132,29 @@
                         this.numbersArray = this.createNumbersArray(1, 90);
                         this.previousNumbers = [];
                     }
+                },
+                generateTicket(){
+                    var self = this;
+                    self.showTicket = true;
+                    for(let i=0;i<3;i++){
+                        self.ticket.push(self.getRow());
+                    }
+                },
+                getRow(){
+                    let indexArray = [];
+                    while(indexArray.length < 5){
+                        const randomNumber = Math.floor(Math.random()*9);
+                        if(indexArray.indexOf(randomNumber) < 0){
+                            indexArray.push(randomNumber);
+                        }
+                    }
+                    let row = [-1,-1,-1,-1,-1,-1,-1,-1,-1];
+                    indexArray.forEach((index) => {
+                        let max = (index+1)*10, min = index*10;
+                        if(min == 0){ min = 1};
+                        row[index] = Math.floor(Math.random()* (max - min)) + min;
+                    });
+                    return row;
                 }
             }
         })
