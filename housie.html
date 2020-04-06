@@ -33,16 +33,16 @@
                         <v-btn color="primary" @click="pickANumber()">Generate Number</v-btn>
                         <v-btn color="primary" @click="generateTicket()">Generate Ticket</v-btn>
                         <v-btn color="primary" @click="resetColors()">Reset Board</v-btn>
-                    </div><br><br>
+                    </div>
                     <div>
                         <span :id="'prev-'+index" v-for="(num,index) in previousNumbers" :class="index == (previousNumbers.length-1)? 'highlight-picked-num' : ''">
                             {{num}}
                         </span>
-                    </div><br><br>
+                    </div>
                     <v-simple-table>
                         <template>
                             <tr v-for="i in numberSequence">
-                                <td :id="j" class="cell pa-6 text-center" v-for="j in i">
+                                <td :id="j" class="cell pa-3 text-center" v-for="j in i">
                                     <span>{{j}}</span>
                                 </td>
                             </tr>
