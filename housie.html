@@ -134,7 +134,6 @@
                     }
                 },
                 generateTicket(){
-                    //TODO - don't leave blank spaces
                     var self = this;
                     self.showTicket = true;
                     self.ticket = [
@@ -145,6 +144,13 @@
                     let indexMatrix = [];
                     for(let i = 0;i < 3;i++){
                         let indexArray = [];
+                        if(i === 1){
+                            const numberSequence = [0,1,2,3,4,5,6,7,8];
+                            for(let j = 0; j < 5; j++){
+                                numberSequence.splice(numberSequence.indexOf(indexMatrix[0][j]),1);
+                            }
+                            indexArray.push(...numberSequence);
+                        }
                         while(indexArray.length < 5){
                             const randomNumber = Math.floor(Math.random()*9);
                             if(indexArray.indexOf(randomNumber) < 0){
