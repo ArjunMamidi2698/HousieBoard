@@ -141,37 +141,20 @@
                         [-1,-1,-1,-1,-1,-1,-1,-1,-1],
                         [-1,-1,-1,-1,-1,-1,-1,-1,-1]
                     ];
-                    let indexMatrix = [];
-                    for(let i = 0;i < 3;i++){
-                        let indexArray = [];
-                        if(i === 1){
-                            const numberSequence = [0,1,2,3,4,5,6,7,8];
-                            for(let j = 0; j < 5; j++){
-                                numberSequence.splice(numberSequence.indexOf(indexMatrix[0][j]),1);
-                            }
-                            indexArray.push(...numberSequence);
-                        }
-                        while(indexArray.length < 5){
-                            const randomNumber = Math.floor(Math.random()*9);
-                            if(indexArray.indexOf(randomNumber) < 0){
-                                indexArray.push(randomNumber);
-                            }
-                        }
-                        indexMatrix[i] = indexArray.sort();
-                    }
-                    for(let i=0;i<9;i++){
+                    let indexMatrix = self.getIndexMatrix();
+                    for(let i = 0;i < 9;i++){
                         let col = [],colIndexArray = [];
-                        for(let j=0;j<3;j++){
+                        for(let j = 0;j < 3;j++){
                             let indexArray = indexMatrix[j];
                             if(indexArray.indexOf(i) > -1){
-                                let max = (i+1)*10, min = i*10;
+                                let max = (i + 1) * 10, min = i * 10;
                                 if(min == 0){ min = 1};
-                                let randomNumber = Math.floor(Math.random()* (max - min)) + min;
+                                let randomNumber = Math.floor(Math.random() * (max - min)) + min;
                                 if(col.indexOf(randomNumber) < 0){
                                     col.push(randomNumber);
                                 } else {
                                     while(col.indexOf(randomNumber) > -1){
-                                        randomNumber = Math.floor(Math.random()* (max - min)) + min;
+                                        randomNumber = Math.floor(Math.random() * (max - min)) + min;
                                     }
                                     col.push(randomNumber);
                                 }
@@ -188,6 +171,57 @@
                         });
                     }
                 },
+                getIndexMatrix(){
+                    const self = this;
+                    let indexMatrix = [];
+                    for(let i = 0;i < 3;i++){
+                        let indexArray = [];
+                        if(i === 1){
+                            const numberSequence = [0,1,2,3,4,5,6,7,8];
+                            for(let j = 0; j < 5; j++){
+                                numberSequence.splice(numberSequence.indexOf(indexMatrix[0][j]), 1);
+                            }
+                            indexArray.push(...numberSequence);
+                        }
+                        while(indexArray.length < 5){
+                            const randomNumber = Math.floor(Math.random() * 9);
+                            if(indexArray.indexOf(randomNumber) < 0){
+                                indexArray.push(randomNumber);
+                                indexArray.sort();
+                                if(self.isThreeSequence(indexArray)){
+                                    indexArray.splice(indexArray.indexOf(randomNumber), 1);
+                                } else if(i === 0 && indexArray.length === 5 && self.isAllEven(indexArray)){
+                                    // change to odd 
+                                    indexArray.splice(indexArray.indexOf(8), 1);
+                                    indexArray.push(7);
+                                }  
+                                console.log(indexArray);
+                            }  
+                        }
+                        indexMatrix[i] = indexArray.sort();
+                    }
+                    return indexMatrix;
+                },
+                isThreeSequence(indexArray){
+                    if(indexArray.length > 2){
+                        for(let i = 0;i < indexArray.length - 2;i++){
+                            if(indexArray[i] == indexArray[i + 1] - 1 && indexArray[i + 1] == indexArray[i + 2] - 1){
+                                return true;
+                            }
+                        }
+                        return false;
+                    } else {
+                        return false;
+                    }
+                },
+                isAllEven(indexArray){
+                    for(let i = 0; i < indexArray.length; i++){
+                        if(indexArray[i]%2 != 0){
+                            return false;
+                        }
+                    }
+                    return true; // 0, 2, 4, 6, 8
+                }
             }
         })
     </script>
