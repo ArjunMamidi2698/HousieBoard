@@ -143,7 +143,7 @@
                         [-1,-1,-1,-1,-1,-1,-1,-1,-1]
                     ];
                     let indexMatrix = [];
-                    for(let i=0;i<3;i++){
+                    for(let i = 0;i < 3;i++){
                         let indexArray = [];
                         while(indexArray.length < 5){
                             const randomNumber = Math.floor(Math.random()*9);
@@ -161,12 +161,13 @@
                                 let max = (i+1)*10, min = i*10;
                                 if(min == 0){ min = 1};
                                 let randomNumber = Math.floor(Math.random()* (max - min)) + min;
-                                while(col.indexOf(randomNumber) < 0){
-                                    if(col.indexOf(randomNumber) > -1){
+                                if(col.indexOf(randomNumber) < 0){
+                                    col.push(randomNumber);
+                                } else {
+                                    while(col.indexOf(randomNumber) > -1){
                                         randomNumber = Math.floor(Math.random()* (max - min)) + min;
-                                    } else {
-                                        col.push(randomNumber);
                                     }
+                                    col.push(randomNumber);
                                 }
                                 colIndexArray.push(j);
                             }
