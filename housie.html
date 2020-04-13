@@ -188,40 +188,39 @@
                             if(indexArray.indexOf(randomNumber) < 0){
                                 indexArray.push(randomNumber);
                                 indexArray.sort();
-                                if(self.isThreeSequence(indexArray)){
-                                    indexArray.splice(indexArray.indexOf(randomNumber), 1);
-                                } else if(i === 0 && indexArray.length === 5 && self.isAllEven(indexArray)){
-                                    // change to odd 
-                                    indexArray.splice(indexArray.indexOf(8), 1);
-                                    indexArray.push(7);
-                                }  
-                                console.log(indexArray);
+                                indexArray = self.checkIsThreeSequence(indexArray);
+                                // if(i === 0 && indexArray.length === 5 && self.isAllEven(indexArray)){
+                                //     // change to odd 
+                                //     indexArray.splice(indexArray.indexOf(8), 1);
+                                //     indexArray.push(7);
+                                // }  
                             }  
                         }
                         indexMatrix[i] = indexArray.sort();
                     }
                     return indexMatrix;
                 },
-                isThreeSequence(indexArray){
+                checkIsThreeSequence(indexArray){
                     if(indexArray.length > 2){
                         for(let i = 0;i < indexArray.length - 2;i++){
                             if(indexArray[i] == indexArray[i + 1] - 1 && indexArray[i + 1] == indexArray[i + 2] - 1){
-                                return true;
+                                indexArray.splice((i+2), 1);
+                                return indexArray;
                             }
                         }
-                        return false;
+                        return indexArray;
                     } else {
-                        return false;
+                        return indexArray;
                     }
                 },
-                isAllEven(indexArray){
-                    for(let i = 0; i < indexArray.length; i++){
-                        if(indexArray[i]%2 != 0){
-                            return false;
-                        }
-                    }
-                    return true; // 0, 2, 4, 6, 8
-                }
+                // isAllEven(indexArray){
+                //     for(let i = 0; i < indexArray.length; i++){
+                //         if(indexArray[i]%2 != 0){
+                //             return false;
+                //         }
+                //     }
+                //     return true; // 0, 2, 4, 6, 8
+                // }
             }
         })
     </script>
