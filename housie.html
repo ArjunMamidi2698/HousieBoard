@@ -29,6 +29,7 @@
         }
         .usedTickets-inside-card{
             display: inline-grid;
+            width: -webkit-fill-available;
         }
     </style>
 </head>
@@ -96,21 +97,25 @@
                     <v-icon @click="expanded = !expanded" class="float-right">keyboard_arrow_down</v-icon>
                     <div v-show="expanded">
                         <v-row dense>
-                            <v-col cols="4" class=" pa-4 d-flex" v-for="ticket in usedTickets">
-                                <v-card class="pa-3 usedTickets-inside-card">
-                                    <span class="text-center font-weight-black">{{ticket.name}}</span>
-                                    <v-simple-table>
-                                        <template>
-                                            <tr v-for="i in ticket.ticket">
-                                                <td v-for="j in i">
-                                                    <span v-if="j!=-1">
-                                                        {{j}}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        </template>
-                                    </v-simple-table>
-                                </v-card>
+                            <v-col cols="6" class="pa-4" v-for="ticket in usedTickets">
+                                <v-flex xs12>
+                                    <v-card class="pa-3 usedTickets-inside-card">
+                                        <span class="text-center font-weight-black">{{ticket.name}}</span>
+                                        <v-flex xs12 overflow-hidden>
+                                            <v-simple-table class="table-overflow">
+                                                <template>
+                                                    <tr v-for="i in ticket.ticket">
+                                                        <td v-for="j in i">
+                                                            <span v-if="j!=-1">
+                                                                {{j}}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                </template>
+                                            </v-simple-table>
+                                        </v-flex>
+                                    </v-card>
+                                </v-flex>
                             </v-col>
                         </v-row>
                     </div>
