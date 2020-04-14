@@ -13,6 +13,7 @@
     <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script> -->
     <style>
         table, tr>td{
             border: 2px solid indigo;
@@ -41,7 +42,7 @@
                     <h1>Housie Board</h1><br>
                     <div>
                         <v-btn color="primary" @click="pickANumber()">Generate Number</v-btn>
-                        <v-btn color="primary" @click="generateTicket()">Generate Ticket</v-btn>
+                        <v-btn color="primary" @click="generateTicket(null)">Generate Ticket</v-btn>
                         <v-btn color="primary" @click="resetColors()">Reset Board</v-btn>
                     </div><br>
                     <div>
@@ -58,7 +59,7 @@
                             </tr>
                         </template>
                     </v-simple-table><br>
-                    <v-dialog v-model="showTicket" width="500" height="500">
+                    <v-dialog v-model="showTicket" persistent width="500" height="500">
                         <v-card class="pa-3">
                             <v-layout>
                                 <span class="font-weight-black title align-self-end">Housie Ticket - {{Math.floor(Math.random()*500)}}</span>
@@ -85,7 +86,7 @@
                             </div>
                             <v-card-actions v-show="!addName">
                                 <v-spacer></v-spacer>
-                                <v-btn text medium color="indigo" @click="generateTicket()">Regenerate Ticket</v-btn>
+                                <v-btn text medium color="indigo" @click="generateTicket(null)">Regenerate Ticket</v-btn>
                                 <v-btn text medium color="indigo" @click="addTicketHolder()">Use</v-btn>
                             </v-card-actions>
                         </v-card>
@@ -95,13 +96,32 @@
             <v-container fluid>
                 <v-card class="pa-3 usedTickets-card" color="indigo lighten-4" v-if="usedTickets.length > 0" >
                     <span class="title">Selected Tickets</span>
-                    <v-icon @click="expanded = !expanded" class="float-right">keyboard_arrow_down</v-icon>
+                    <div class="float-right">
+                        <v-icon title="Edit Tickets" v-if="!editTickets" @click="editTickets = !editTickets">create</v-icon><v-icon v-else @click="editTickets = !editTickets">clear</v-icon>
+                        <v-icon title="Add Ticket" @click="generateTicket(null)">add</v-icon>
+                        <v-icon title="Update All" @click="regenerateAllTickets()">loop</v-icon>
+                        <v-icon title="Show Tickets" @click="expanded = !expanded">keyboard_arrow_down</v-icon>
+                    </div>
                     <div v-show="expanded">
                         <v-row dense>
-                            <v-col cols="6" class="pa-4" v-for="ticket in usedTickets">
+                            <v-col cols="6" class="pa-4" v-for="(ticket,index) in usedTickets">
                                 <v-flex xs12>
                                     <v-card class="pa-3 usedTickets-inside-card">
-                                        <span class="text-center font-weight-black">{{ticket.name}}</span>
+                                        <v-layout>
+                                            <span class="font-weight-black title align-self-end">{{ticket.name}}</span>
+                                            <v-spacer></v-spacer>
+                                            <div v-show="editTickets">
+                                                <!-- <div v-if="updateTicketHolder">
+                                                    <v-text-field class="mt-0 pt-0" placeholder="Name" v-model="ticket.name"></v-text-field>
+                                                    <v-btn icon><v-icon color="success" @click="updateTicketHolder(index)">done</v-icon></v-btn>
+                                                    <v-btn icon><v-icon color="error" @click="doNotUpdateTicketHolder(index)">clear</v-icon></v-btn>
+                                                </div> -->
+                                                <!-- <div v-show="!updateTicketHolder"> -->
+                                                    <!-- <v-icon @click="updateTicketHolder = true;">create</v-icon> -->
+                                                    <v-icon color="red" @click="deleteTicket(index)">remove_circle</v-icon>
+                                                <!-- </div> -->
+                                            </div>
+                                        </v-layout>
                                         <v-flex xs12 overflow-hidden>
                                             <v-simple-table class="table-overflow">
                                                 <template>
@@ -162,6 +182,8 @@
                     ticketHolder: null,
                     usedTickets: [],
                     expanded: false,
+                    editTickets: false,
+                    updateTicketHolder: false,
                 }
             },
             methods: {
@@ -201,10 +223,12 @@
                         this.previousNumbers = [];
                     }
                 },
-                generateTicket(){
+                generateTicket(action){
                     var self = this;
-                    self.showTicket = true;
-                    self.resetData();
+                    if(action == null){
+                        self.showTicket = true;
+                        self.resetData();
+                    }
                     self.ticket = [
                         [-1,-1,-1,-1,-1,-1,-1,-1,-1],
                         [-1,-1,-1,-1,-1,-1,-1,-1,-1],
@@ -301,7 +325,7 @@
                         ticket: self.ticket,
                     }
                     self.usedTickets.push(ticketObj);
-                    self.generateTicket();
+                    self.generateTicket(null);
                     self.resetData();
                     // self.showTicket = false;
                 },
@@ -309,6 +333,17 @@
                     var self = this;
                     self.ticketHolder = null;
                     self.addName = false;
+                },
+                deleteTicket(ticketIndex){
+                    var self = this;
+                    self.usedTickets.splice(ticketIndex, 1);
+                },
+                regenerateAllTickets(){
+                    var self = this;
+                    self.usedTickets.forEach( (ticket) => {
+                        self.generateTicket('noPopup');
+                        ticket.ticket = self.ticket;
+                    })
                 }
             }
         })
