@@ -94,6 +94,7 @@
             </v-container>
             <v-container fluid>
                 <v-card class="pa-3 usedTickets-card" color="indigo lighten-4" v-if="usedTickets.length > 0" >
+                    <span class="title">Selected Tickets</span>
                     <v-icon @click="expanded = !expanded" class="float-right">keyboard_arrow_down</v-icon>
                     <div v-show="expanded">
                         <v-row dense>
@@ -140,6 +141,14 @@
                     internalArray = [];
                 }
                 this.numbersArray = this.createNumbersArray(1, 90);
+            },
+            mounted(){
+                window.addEventListener('beforeunload', (event) => {
+                // Cancel the event as stated by the standard.
+                event.preventDefault();
+                // Chrome requires returnValue to be set.
+                event.returnValue = 'sure?';
+                });
             },
             data() {
                 return {
