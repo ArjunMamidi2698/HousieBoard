@@ -7,6 +7,9 @@
     <title>Housie</title>
     <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Roboto:400,500,700,400italic|Material+Icons" />
+    <link rel = "stylesheet"
+    href = "https://fonts.googleapis.com/icon?family=Material+Icons">
     <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
@@ -20,6 +23,12 @@
         }
         .v-dialog__container{
             display: block !important;
+        }
+        .usedTickets-card{
+            min-height: 3rem;
+        }
+        .usedTickets-inside-card{
+            display: inline-grid;
         }
     </style>
 </head>
@@ -49,8 +58,14 @@
                         </template>
                     </v-simple-table><br>
                     <v-dialog v-model="showTicket" width="500" height="500">
-                        <v-card class="pa-3 text-center">
-                            <span class="font-weight-black">Housie Ticket - {{Math.floor(Math.random()*500)}}</span><br>
+                        <v-card class="pa-3">
+                            <v-layout>
+                                <span class="font-weight-black title align-self-end">Housie Ticket - {{Math.floor(Math.random()*500)}}</span>
+                                <v-spacer></v-spacer>
+                                <v-btn icon small dark color="indigo" @click="showTicket = false;">
+                                    <v-icon color="indigo">clear</v-icon>
+                                </v-btn>
+                            </v-layout>
                             <v-simple-table>
                                 <template>
                                     <tr v-for="i in ticket">
@@ -62,11 +77,46 @@
                                     </tr>
                                 </template>
                             </v-simple-table>
+                            <div v-if="addName" class="mt-2 pt-2 d-flex">
+                                <v-text-field class="mt-0 pt-0" placeholder="Name" v-model="ticketHolder"></v-text-field>
+                                <v-btn icon><v-icon color="success" @click="useTicket()">done</v-icon></v-btn>
+                                <v-btn icon><v-icon color="error" @click="resetData()">clear</v-icon></v-btn>
+                            </div>
+                            <v-card-actions v-show="!addName">
+                                <v-spacer></v-spacer>
+                                <v-btn text medium color="indigo" @click="generateTicket()">Regenerate Ticket</v-btn>
+                                <v-btn text medium color="indigo" @click="addTicketHolder()">Use</v-btn>
+                            </v-card-actions>
                         </v-card>
                     </v-dialog>
-                    <p>Created by - <span class="font-italic font-weight-black">ARJUN MAMIDI</span></p>
                 </center>
             </v-container>
+            <v-container fluid>
+                <v-card class="pa-3 usedTickets-card" color="indigo lighten-4" v-if="usedTickets.length > 0" >
+                    <v-icon @click="expanded = !expanded" class="float-right">keyboard_arrow_down</v-icon>
+                    <div v-show="expanded">
+                        <v-row dense>
+                            <v-col cols="4" class=" pa-4 d-flex" v-for="ticket in usedTickets">
+                                <v-card class="pa-3 usedTickets-inside-card">
+                                    <span class="text-center font-weight-black">{{ticket.name}}</span>
+                                    <v-simple-table>
+                                        <template>
+                                            <tr v-for="i in ticket.ticket">
+                                                <td v-for="j in i">
+                                                    <span v-if="j!=-1">
+                                                        {{j}}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </v-simple-table>
+                                </v-card>
+                            </v-col>
+                        </v-row>
+                    </div>
+                </v-card>
+            </v-container>
+            <p class="text-center">Created by - <span class="font-italic font-weight-black">ARJUN MAMIDI</span></p>
         </v-app>
     </div>
     <script>
@@ -94,6 +144,10 @@
                     previousNumbers: [],
                     showTicket: false,
                     ticket: [],
+                    addName: false,
+                    ticketHolder: null,
+                    usedTickets: [],
+                    expanded: false,
                 }
             },
             methods: {
@@ -136,6 +190,7 @@
                 generateTicket(){
                     var self = this;
                     self.showTicket = true;
+                    self.resetData();
                     self.ticket = [
                         [-1,-1,-1,-1,-1,-1,-1,-1,-1],
                         [-1,-1,-1,-1,-1,-1,-1,-1,-1],
@@ -220,7 +275,27 @@
                 //         }
                 //     }
                 //     return true; // 0, 2, 4, 6, 8
-                // }
+                // },
+                addTicketHolder(){
+                    var self = this;
+                    self.addName = true;
+                },
+                useTicket(){
+                    var self = this;
+                    const ticketObj = {
+                        name: self.ticketHolder,
+                        ticket: self.ticket,
+                    }
+                    self.usedTickets.push(ticketObj);
+                    self.generateTicket();
+                    self.resetData();
+                    // self.showTicket = false;
+                },
+                resetData(){
+                    var self = this;
+                    self.ticketHolder = null;
+                    self.addName = false;
+                }
             }
         })
     </script>
