@@ -85,7 +85,7 @@
                             </v-simple-table>
                             <div v-if="addName" class="mt-2 pt-2 d-flex">
                                 <v-text-field class="mt-0 pt-0" autofocus placeholder="Name" v-model="ticketHolder"></v-text-field>
-                                <v-btn icon @click="useTicket()" :disabled="!ticketHolder"><v-icon color="success">done</v-icon></v-btn>
+                                <v-btn icon @click="useTicket(null)" :disabled="!ticketHolder"><v-icon color="success">done</v-icon></v-btn>
                                 <v-btn icon @click="resetData()"><v-icon color="error" >clear</v-icon></v-btn>
                             </div>
                             <v-card-actions v-show="!addName">
@@ -165,6 +165,7 @@
                     internalArray = [];
                 }
                 this.numbersArray = this.createNumbersArray(1, 90);
+                this.createTickets(5);
             },
             mounted(){
                 window.addEventListener('beforeunload', (event) => {
@@ -323,7 +324,7 @@
                     var self = this;
                     self.addName = true;
                 },
-                useTicket(){
+                useTicket(action){
                     var self = this;
                     const ticketObj = {
                         name: self.ticketHolder,
@@ -331,7 +332,9 @@
                         updateTicketHolder: false,
                     }
                     self.usedTickets.push(ticketObj);
-                    self.generateTicket(null);
+                    if(action == null){
+                        self.generateTicket(null);
+                    }
                     self.resetData();
                     // self.showTicket = false;
                 },
@@ -363,6 +366,15 @@
                     var self = this;
                     self.usedTickets[index].name = self.updatedTicketName;
                     self.usedTickets[index].updateTicketHolder = false;
+                    self.updatedTicketName = null;
+                },
+                createTickets(count){
+                    var self = this;
+                    for(let i=0;i<count;i++){
+                        self.ticketHolder = 'User-'+(i+1);
+                        self.generateTicket('noPopup');
+                        self.useTicket('noPopup');
+                    }
                 }
             }
         })
