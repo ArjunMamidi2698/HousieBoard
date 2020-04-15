@@ -66,7 +66,7 @@
                     <v-dialog v-model="showTicket" persistent width="500" height="500">
                         <v-card class="pa-3">
                             <v-layout>
-                                <span class="font-weight-black title align-self-end">Housie Ticket - {{Math.floor(Math.random()*500)}}</span>
+                                <span class="font-weight-black title align-self-end">Housie Ticket</span>
                                 <v-spacer></v-spacer>
                                 <v-btn icon small dark color="indigo" @click="showTicket = false;">
                                     <v-icon color="indigo">clear</v-icon>
@@ -84,9 +84,9 @@
                                 </template>
                             </v-simple-table>
                             <div v-if="addName" class="mt-2 pt-2 d-flex">
-                                <v-text-field class="mt-0 pt-0" placeholder="Name" v-model="ticketHolder"></v-text-field>
-                                <v-btn icon><v-icon color="success" @click="useTicket()">done</v-icon></v-btn>
-                                <v-btn icon><v-icon color="error" @click="resetData()">clear</v-icon></v-btn>
+                                <v-text-field class="mt-0 pt-0" autofocus placeholder="Name" v-model="ticketHolder"></v-text-field>
+                                <v-btn icon @click="useTicket()" :disabled="!ticketHolder"><v-icon color="success">done</v-icon></v-btn>
+                                <v-btn icon @click="resetData()"><v-icon color="error" >clear</v-icon></v-btn>
                             </div>
                             <v-card-actions v-show="!addName">
                                 <v-spacer></v-spacer>
@@ -104,7 +104,7 @@
                         <v-icon title="Edit Tickets" v-if="!editTickets" @click="editTickets = !editTickets">create</v-icon><v-icon v-else @click="editTickets = !editTickets">clear</v-icon>
                         <v-icon title="Add Ticket" @click="generateTicket(null)">add</v-icon>
                         <v-icon title="Update All" @click="regenerateAllTickets()">loop</v-icon>
-                        <v-icon title="Show Tickets" @click="expanded = !expanded">keyboard_arrow_down</v-icon>
+                        <v-icon title="Show Tickets" @click="expanded = !expanded">{{!expanded ? 'keyboard_arrow_down' : 'keyboard_arrow_up'}}</v-icon>
                     </div>
                     <div v-show="expanded">
                         <v-row dense>
@@ -115,12 +115,13 @@
                                             <span v-show="!ticket.updateTicketHolder" class="font-weight-black title align-self-end">{{ticket.name}}</span>
                                             <div v-show="editTickets">
                                                 <div v-if="ticket.updateTicketHolder && ticketIndex == index" class="d-inline-flex">
-                                                    <v-text-field class="mt-0 pt-0" placeholder="Name" v-model="updatedTicketName"></v-text-field>
+                                                    <v-text-field class="mt-0 pt-0" autofocus placeholder="Name" v-model="updatedTicketName"></v-text-field>
                                                     <v-btn icon><v-icon color="success" @click="updateTicketHolderName(index)">done</v-icon></v-btn>
                                                     <v-btn icon><v-icon color="error" @click="ticket.updateTicketHolder = false">clear</v-icon></v-btn>
                                                 </div>
                                                 <div v-show="!ticket.updateTicketHolder" class="ticket-options">
                                                     <v-icon @click="ticket.updateTicketHolder = true;ticketIndex = index;">create</v-icon>
+                                                    <v-icon @click="regenerateTicket(index)">loop</v-icon>
                                                     <v-icon color="red" @click="deleteTicket(index)">remove_circle</v-icon>
                                                 </div>
                                             </div>
@@ -341,7 +342,10 @@
                 },
                 deleteTicket(ticketIndex){
                     var self = this;
-                    self.usedTickets.splice(ticketIndex, 1);
+                    const ask = confirm('Are you sure?');
+                    if(ask){
+                        self.usedTickets.splice(ticketIndex, 1);
+                    }
                 },
                 regenerateAllTickets(){
                     var self = this;
@@ -349,6 +353,11 @@
                         self.generateTicket('noPopup');
                         ticket.ticket = self.ticket;
                     })
+                },
+                regenerateTicket(index){
+                    var self = this;
+                    self.generateTicket('noPopup');
+                    self.usedTickets[index].ticket = self.ticket;
                 },
                 updateTicketHolderName(index){
                     var self = this;
