@@ -32,6 +32,10 @@
             display: inline-grid;
             width: -webkit-fill-available;
         }
+        .ticket-options{
+            position: absolute;
+            right: 10px;
+        }
     </style>
 </head>
 <body>
@@ -108,18 +112,17 @@
                                 <v-flex xs12>
                                     <v-card class="pa-3 usedTickets-inside-card">
                                         <v-layout>
-                                            <span class="font-weight-black title align-self-end">{{ticket.name}}</span>
-                                            <v-spacer></v-spacer>
+                                            <span v-show="!ticket.updateTicketHolder" class="font-weight-black title align-self-end">{{ticket.name}}</span>
                                             <div v-show="editTickets">
-                                                <!-- <div v-if="updateTicketHolder">
-                                                    <v-text-field class="mt-0 pt-0" placeholder="Name" v-model="ticket.name"></v-text-field>
-                                                    <v-btn icon><v-icon color="success" @click="updateTicketHolder(index)">done</v-icon></v-btn>
-                                                    <v-btn icon><v-icon color="error" @click="doNotUpdateTicketHolder(index)">clear</v-icon></v-btn>
-                                                </div> -->
-                                                <!-- <div v-show="!updateTicketHolder"> -->
-                                                    <!-- <v-icon @click="updateTicketHolder = true;">create</v-icon> -->
+                                                <div v-if="ticket.updateTicketHolder && ticketIndex == index" class="d-inline-flex">
+                                                    <v-text-field class="mt-0 pt-0" placeholder="Name" v-model="updatedTicketName"></v-text-field>
+                                                    <v-btn icon><v-icon color="success" @click="updateTicketHolderName(index)">done</v-icon></v-btn>
+                                                    <v-btn icon><v-icon color="error" @click="ticket.updateTicketHolder = false">clear</v-icon></v-btn>
+                                                </div>
+                                                <div v-show="!ticket.updateTicketHolder" class="ticket-options">
+                                                    <v-icon @click="ticket.updateTicketHolder = true;ticketIndex = index;">create</v-icon>
                                                     <v-icon color="red" @click="deleteTicket(index)">remove_circle</v-icon>
-                                                <!-- </div> -->
+                                                </div>
                                             </div>
                                         </v-layout>
                                         <v-flex xs12 overflow-hidden>
@@ -183,7 +186,8 @@
                     usedTickets: [],
                     expanded: false,
                     editTickets: false,
-                    updateTicketHolder: false,
+                    updatedTicketName: null,
+                    ticketIndex: -1,
                 }
             },
             methods: {
@@ -323,6 +327,7 @@
                     const ticketObj = {
                         name: self.ticketHolder,
                         ticket: self.ticket,
+                        updateTicketHolder: false,
                     }
                     self.usedTickets.push(ticketObj);
                     self.generateTicket(null);
@@ -344,6 +349,11 @@
                         self.generateTicket('noPopup');
                         ticket.ticket = self.ticket;
                     })
+                },
+                updateTicketHolderName(index){
+                    var self = this;
+                    self.usedTickets[index].name = self.updatedTicketName;
+                    self.usedTickets[index].updateTicketHolder = false;
                 }
             }
         })
