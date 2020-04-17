@@ -64,7 +64,7 @@
                     <v-simple-table>
                         <template>
                             <tr v-for="i in numberSequence">
-                                <td :id="j" class="cell pa-3 text-center" v-for="j in i">
+                                <td :id="j" class="cell pa-3 text-center" :class="'cell-'+j" v-for="j in i">
                                     <span>{{j}}</span>
                                 </td>
                             </tr>
@@ -155,6 +155,18 @@
                     internalArray = [];
                 }
                 this.numbersArray = this.createNumbersArray(1, 90);
+                this.getValuesFromLocalStorage();
+            },
+            watch: {
+                previousNumbers(){
+                    localStorage.setItem('previousNumbers', JSON.stringify(this.previousNumbers));
+                },
+                numbersArray(){
+                    localStorage.setItem('numbersArray', JSON.stringify(this.numbersArray));
+                },
+                usedTickets(){
+                    localStorage.setItem('usedTickets', JSON.stringify(this.usedTickets));
+                }
             },
             mounted(){
                 window.addEventListener('beforeunload', (event) => {
@@ -205,22 +217,10 @@
                        window.alert('Game Completed!!!!!!');
                     }
                 },
-                resetColors(){
-                    const ask = confirm('Are you sure?');
-                    if(ask){
-                        const list = document.querySelectorAll('.cell');
-                        list.forEach((element) => {
-                            element.style.background = 'white';
-                        });
-                        this.numbersArray = this.createNumbersArray(1, 90);
-                        this.previousNumbers = [];
-                    }
-                },
                 generateTicket(action){
                     var self = this;
                     if(action == null){
                         self.showTicket = true;
-                        self.resetData();
                     }
                     self.ticket = [
                         [-1,-1,-1,-1,-1,-1,-1,-1,-1],
@@ -339,6 +339,38 @@
                         updateTicketHolder: false,
                     }
                     self.usedTickets.push(ticketObj);
+                },
+                getValuesFromLocalStorage(){
+                    var self = this;
+                    if(JSON.parse(localStorage.getItem('previousNumbers')) != null && JSON.parse(localStorage.getItem('numbersArray')) != null){
+                        self.previousNumbers = JSON.parse(localStorage.getItem('previousNumbers'));
+                        self.numbersArray = JSON.parse(localStorage.getItem('numbersArray'));
+                        // self.addColors();
+                    }
+                    if(JSON.parse(localStorage.getItem('usedTickets'))){
+                        self.usedTickets = JSON.parse(localStorage.getItem('usedTickets'));
+                    }
+                },
+                addColors(){
+                    var self = this;
+                    self.previousNumbers.forEach( (num) => {
+                        let ele = 'cell-'+num;
+                        console.log(ele);
+                        const elem = document.getElementsByClassName(ele);
+                        console.log(elem);
+                        document.getElementById(num).style.background = 'rgba(202, 184, 250, 0.59)';
+                    });
+                },
+                resetColors(){
+                    const ask = confirm('Are you sure?');
+                    if(ask){
+                        const list = document.querySelectorAll('.cell');
+                        list.forEach((element) => {
+                            element.style.background = 'white';
+                        });
+                        this.numbersArray = this.createNumbersArray(1, 90);
+                        this.previousNumbers = [];
+                    }
                 },
             }
         })
