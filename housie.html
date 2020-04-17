@@ -35,6 +35,13 @@
         .ticket-options{
             position: absolute;
             right: 10px;
+            top: 10px;
+        }
+        .v-card__actions{
+            margin-right: 23px;
+        }
+        .cards-slider{
+            width: 100%;
         }
     </style>
 </head>
@@ -65,33 +72,16 @@
                     </v-simple-table><br>
                     <v-dialog v-model="showTicket" persistent width="500" height="500">
                         <v-card class="pa-3">
-                            <v-layout>
-                                <span class="font-weight-black title align-self-end">Housie Ticket</span>
+                            <v-card-title>How many tickets you need?</v-card-title><br>
+                            <v-card-text>
+                                <v-slider v-model="slider"thumb-label="always"
+                                    min="1" max="20" class="cards-slider" hide-details
+                                ></v-slider>
+                            </v-card-text>
+                            <v-card-actions>
                                 <v-spacer></v-spacer>
-                                <v-btn icon small dark color="indigo" @click="showTicket = false;">
-                                    <v-icon color="indigo">clear</v-icon>
-                                </v-btn>
-                            </v-layout>
-                            <v-simple-table>
-                                <template>
-                                    <tr v-for="i in ticket">
-                                        <td v-for="j in i">
-                                            <span v-if="j!=-1">
-                                                {{j}}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </v-simple-table>
-                            <div v-if="addName" class="mt-2 pt-2 d-flex">
-                                <v-text-field class="mt-0 pt-0" autofocus placeholder="Name" v-model="ticketHolder"></v-text-field>
-                                <v-btn icon @click="useTicket(null)" :disabled="!ticketHolder"><v-icon color="success">done</v-icon></v-btn>
-                                <v-btn icon @click="resetData()"><v-icon color="error" >clear</v-icon></v-btn>
-                            </div>
-                            <v-card-actions v-show="!addName">
-                                <v-spacer></v-spacer>
-                                <v-btn text medium color="indigo" @click="generateTicket(null)">Regenerate Ticket</v-btn>
-                                <v-btn text medium color="indigo" @click="addTicketHolder()">Use</v-btn>
+                                <v-btn color="success" @click="createTickets(slider)">Generate</v-btn>
+                                <v-btn color="error" @click="showTicket = false;">Cancel</v-btn>
                             </v-card-actions>
                         </v-card>
                     </v-dialog>
@@ -99,11 +89,11 @@
             </v-container>
             <v-container fluid>
                 <v-card class="pa-3 usedTickets-card" color="indigo lighten-4" v-if="usedTickets.length > 0" >
-                    <span class="title">Selected Tickets</span>
+                    <span class="title">Selected Tickets({{usedTickets.length}})</span>
                     <div class="float-right">
                         <v-icon title="Edit Tickets" v-if="!editTickets" @click="editTickets = !editTickets">create</v-icon><v-icon v-else @click="editTickets = !editTickets">clear</v-icon>
                         <v-icon title="Add Ticket" @click="generateTicket(null)">add</v-icon>
-                        <v-icon title="Update All" @click="regenerateAllTickets()">loop</v-icon>
+                        <v-icon title="Update All" @click="regenerateTickets('All',-1)">loop</v-icon>
                         <v-icon title="Show Tickets" @click="expanded = !expanded">{{!expanded ? 'keyboard_arrow_down' : 'keyboard_arrow_up'}}</v-icon>
                     </div>
                     <div v-show="expanded">
@@ -114,15 +104,15 @@
                                         <v-layout>
                                             <span v-show="!ticket.updateTicketHolder" class="font-weight-black title align-self-end">{{ticket.name}}</span>
                                             <div v-show="editTickets">
-                                                <div v-if="ticket.updateTicketHolder && ticketIndex == index" class="d-inline-flex">
+                                                <div v-if="ticket.updateTicketHolder" class="d-inline-flex">
                                                     <v-text-field class="mt-0 pt-0" autofocus placeholder="Name" v-model="updatedTicketName"></v-text-field>
-                                                    <v-btn icon><v-icon color="success" @click="updateTicketHolderName(index)">done</v-icon></v-btn>
-                                                    <v-btn icon><v-icon color="error" @click="ticket.updateTicketHolder = false">clear</v-icon></v-btn>
+                                                    <v-btn icon><v-icon title="Save" color="success" @click="updateTicketHolderName(index)">done</v-icon></v-btn>
+                                                    <v-btn icon><v-icon title="cancel" color="error" @click="ticket.updateTicketHolder = false">clear</v-icon></v-btn>
                                                 </div>
                                                 <div v-show="!ticket.updateTicketHolder" class="ticket-options">
-                                                    <v-icon @click="ticket.updateTicketHolder = true;ticketIndex = index;">create</v-icon>
-                                                    <v-icon @click="regenerateTicket(index)">loop</v-icon>
-                                                    <v-icon color="red" @click="deleteTicket(index)">remove_circle</v-icon>
+                                                    <v-icon title="Edit Ticket Holder" @click="ticket.updateTicketHolder = true;updatedTicketName = ticket.name;">create</v-icon>
+                                                    <v-icon title="Regenerate Ticket" @click="regenerateTickets('selfTicket',index)">loop</v-icon>
+                                                    <v-icon title="Delete Ticket" @click="deleteTicket(index)">delete</v-icon>
                                                 </div>
                                             </div>
                                         </v-layout>
@@ -165,7 +155,6 @@
                     internalArray = [];
                 }
                 this.numbersArray = this.createNumbersArray(1, 90);
-                this.createTickets(5);
             },
             mounted(){
                 window.addEventListener('beforeunload', (event) => {
@@ -183,13 +172,11 @@
                     previousNumbers: [],
                     showTicket: false,
                     ticket: [],
-                    addName: false,
-                    ticketHolder: null,
                     usedTickets: [],
                     expanded: false,
                     editTickets: false,
                     updatedTicketName: null,
-                    ticketIndex: -1,
+                    slider: 1,
                 }
             },
             methods: {
@@ -288,11 +275,6 @@
                                 indexArray.push(randomNumber);
                                 indexArray.sort();
                                 indexArray = self.checkIsThreeSequence(indexArray);
-                                // if(i === 0 && indexArray.length === 5 && self.isAllEven(indexArray)){
-                                //     // change to odd 
-                                //     indexArray.splice(indexArray.indexOf(8), 1);
-                                //     indexArray.push(7);
-                                // }  
                             }  
                         }
                         indexMatrix[i] = indexArray.sort();
@@ -312,37 +294,6 @@
                         return indexArray;
                     }
                 },
-                // isAllEven(indexArray){
-                //     for(let i = 0; i < indexArray.length; i++){
-                //         if(indexArray[i]%2 != 0){
-                //             return false;
-                //         }
-                //     }
-                //     return true; // 0, 2, 4, 6, 8
-                // },
-                addTicketHolder(){
-                    var self = this;
-                    self.addName = true;
-                },
-                useTicket(action){
-                    var self = this;
-                    const ticketObj = {
-                        name: self.ticketHolder,
-                        ticket: self.ticket,
-                        updateTicketHolder: false,
-                    }
-                    self.usedTickets.push(ticketObj);
-                    if(action == null){
-                        self.generateTicket(null);
-                    }
-                    self.resetData();
-                    // self.showTicket = false;
-                },
-                resetData(){
-                    var self = this;
-                    self.ticketHolder = null;
-                    self.addName = false;
-                },
                 deleteTicket(ticketIndex){
                     var self = this;
                     const ask = confirm('Are you sure?');
@@ -350,17 +301,17 @@
                         self.usedTickets.splice(ticketIndex, 1);
                     }
                 },
-                regenerateAllTickets(){
+                regenerateTickets(desc, index){
                     var self = this;
-                    self.usedTickets.forEach( (ticket) => {
+                    if(desc == 'All'){
+                        self.usedTickets.forEach( (ticket) => {
+                            self.generateTicket('noPopup');
+                            ticket.ticket = self.ticket;
+                        })
+                    } else if(desc == 'selfTicket'){
                         self.generateTicket('noPopup');
-                        ticket.ticket = self.ticket;
-                    })
-                },
-                regenerateTicket(index){
-                    var self = this;
-                    self.generateTicket('noPopup');
-                    self.usedTickets[index].ticket = self.ticket;
+                        self.usedTickets[index].ticket = self.ticket;
+                    }
                 },
                 updateTicketHolderName(index){
                     var self = this;
@@ -370,12 +321,25 @@
                 },
                 createTickets(count){
                     var self = this;
-                    for(let i=0;i<count;i++){
-                        self.ticketHolder = 'User-'+(i+1);
+                    self.expanded = true;
+                    window.scrollTo(0,document.querySelector('#vue-main').scrollHeight);
+                    const length = self.usedTickets.length;
+                    for(let i=length;i<(count+length);i++){
                         self.generateTicket('noPopup');
-                        self.useTicket('noPopup');
+                        self.useTicket(('User-'+(i+1)));
                     }
-                }
+                    self.showTicket = false;
+                    self.slider = 1;
+                },
+                useTicket(ticketHolder){
+                    var self = this;
+                    const ticketObj = {
+                        name: ticketHolder,
+                        ticket: self.ticket,
+                        updateTicketHolder: false,
+                    }
+                    self.usedTickets.push(ticketObj);
+                },
             }
         })
     </script>
