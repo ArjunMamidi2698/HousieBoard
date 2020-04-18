@@ -35,7 +35,7 @@
         .ticket-options{
             position: absolute;
             right: 10px;
-            top: 10px;
+            top: 15px;
         }
         .v-card__actions{
             margin-right: 23px;
@@ -64,7 +64,7 @@
                     <v-simple-table>
                         <template>
                             <tr v-for="i in numberSequence">
-                                <td :id="j" class="cell pa-3 text-center" :class="'cell-'+j" v-for="j in i">
+                                <td :id="j" class="cell pa-3 text-center" v-for="j in i">
                                     <span>{{j}}</span>
                                 </td>
                             </tr>
@@ -93,6 +93,7 @@
                     <div class="float-right">
                         <v-icon title="Edit Tickets" v-if="!editTickets" @click="editTickets = !editTickets">create</v-icon><v-icon v-else @click="editTickets = !editTickets">clear</v-icon>
                         <v-icon title="Add Ticket" @click="generateTicket(null)">add</v-icon>
+                        <v-icon title="Delete All Tickets" @click="deleteTickets('All', -1)">delete</v-icon>
                         <v-icon title="Update All" @click="regenerateTickets('All',-1)">loop</v-icon>
                         <v-icon title="Show Tickets" @click="expanded = !expanded">{{!expanded ? 'keyboard_arrow_down' : 'keyboard_arrow_up'}}</v-icon>
                     </div>
@@ -112,7 +113,7 @@
                                                 <div v-show="!ticket.updateTicketHolder" class="ticket-options">
                                                     <v-icon title="Edit Ticket Holder" @click="ticket.updateTicketHolder = true;updatedTicketName = ticket.name;">create</v-icon>
                                                     <v-icon title="Regenerate Ticket" @click="regenerateTickets('selfTicket',index)">loop</v-icon>
-                                                    <v-icon title="Delete Ticket" @click="deleteTicket(index)">delete</v-icon>
+                                                    <v-icon title="Delete Ticket" @click="deleteTickets('self', index)">delete</v-icon>
                                                 </div>
                                             </div>
                                         </v-layout>
@@ -159,23 +160,23 @@
             },
             watch: {
                 previousNumbers(){
-                    localStorage.setItem('previousNumbers', JSON.stringify(this.previousNumbers));
+                    sessionStorage.setItem('previousNumbers', JSON.stringify(this.previousNumbers));
                 },
                 numbersArray(){
-                    localStorage.setItem('numbersArray', JSON.stringify(this.numbersArray));
+                    sessionStorage.setItem('numbersArray', JSON.stringify(this.numbersArray));
                 },
                 usedTickets(){
-                    localStorage.setItem('usedTickets', JSON.stringify(this.usedTickets));
+                    sessionStorage.setItem('usedTickets', JSON.stringify(this.usedTickets));
                 }
             },
-            mounted(){
-                window.addEventListener('beforeunload', (event) => {
-                // Cancel the event as stated by the standard.
-                event.preventDefault();
-                // Chrome requires returnValue to be set.
-                event.returnValue = 'sure?';
-                });
-            },
+            // mounted(){
+            //     window.addEventListener('beforeunload', (event) => {
+            //     // Cancel the event as stated by the standard.
+            //     event.preventDefault();
+            //     // Chrome requires returnValue to be set.
+            //     event.returnValue = 'sure?';
+            //     });
+            // },
             data() {
                 return {
                     number: 0,
@@ -294,11 +295,16 @@
                         return indexArray;
                     }
                 },
-                deleteTicket(ticketIndex){
+                deleteTickets(desc, ticketIndex){
                     var self = this;
-                    const ask = confirm('Are you sure?');
+                    const msg = desc == 'All' ? 'All tickets will be deleted!!' : 'Selected ticket will be deleted!!';
+                    const ask = confirm(msg);
                     if(ask){
-                        self.usedTickets.splice(ticketIndex, 1);
+                        if(desc == 'All'){
+                            self.usedTickets = [];
+                        } else {
+                            self.usedTickets.splice(ticketIndex, 1);
+                        }
                     }
                 },
                 regenerateTickets(desc, index){
@@ -342,23 +348,21 @@
                 },
                 getValuesFromLocalStorage(){
                     var self = this;
-                    if(JSON.parse(localStorage.getItem('previousNumbers')) != null && JSON.parse(localStorage.getItem('numbersArray')) != null){
-                        self.previousNumbers = JSON.parse(localStorage.getItem('previousNumbers'));
-                        self.numbersArray = JSON.parse(localStorage.getItem('numbersArray'));
-                        // self.addColors();
+                    if(JSON.parse(sessionStorage.getItem('previousNumbers')) != null && JSON.parse(sessionStorage.getItem('numbersArray')) != null){
+                        self.previousNumbers = JSON.parse(sessionStorage.getItem('previousNumbers'));
+                        self.numbersArray = JSON.parse(sessionStorage.getItem('numbersArray'));
+                        self.addColors();
                     }
-                    if(JSON.parse(localStorage.getItem('usedTickets'))){
-                        self.usedTickets = JSON.parse(localStorage.getItem('usedTickets'));
+                    if(JSON.parse(sessionStorage.getItem('usedTickets'))){
+                        self.usedTickets = JSON.parse(sessionStorage.getItem('usedTickets'));
                     }
                 },
                 addColors(){
                     var self = this;
                     self.previousNumbers.forEach( (num) => {
-                        let ele = 'cell-'+num;
-                        console.log(ele);
-                        const elem = document.getElementsByClassName(ele);
-                        console.log(elem);
-                        document.getElementById(num).style.background = 'rgba(202, 184, 250, 0.59)';
+                        setTimeout(() => {
+                            document.getElementById(num).style.background = 'rgba(202, 184, 250, 0.59)';
+                        }, 100);
                     });
                 },
                 resetColors(){
