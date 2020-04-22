@@ -43,6 +43,11 @@
         .cards-slider{
             width: 100%;
         }
+        .instructions-icon{
+            position: absolute;
+            right: 10px;
+            top: 10px;
+        }
     </style>
     <script src="https://code.responsivevoice.org/responsivevoice.js?key=ZoF2rQuV"></script>
 </head>
@@ -51,7 +56,11 @@
         <v-app>
             <v-container>
                 <center>
-                    <h1>Housie Board</h1><br>
+                    <h1>Housie Board</h1>
+                    <v-btn icon large class="instructions-icon" @click="showInstructions = true">
+                        <v-icon large>help_outline</v-icon>
+                    </v-btn>
+                    <br>
                     <div>
                         <v-btn color="primary" @click="!playGame ? startGame(true) : startGame(false)">
                             <v-icon color="white" left>{{!playGame ? 'play_circle_outline' : 'pause_circle_outline'}}</v-icon>
@@ -103,6 +112,52 @@
                                 <v-btn color="success" @click="createTickets(slider)">Generate</v-btn>
                                 <v-btn color="error" @click="showTicket = false;">Cancel</v-btn>
                             </v-card-actions>
+                        </v-card>
+                    </v-dialog>
+                    <v-dialog v-model="showInstructions" width="800" height="500">
+                        <v-card class="pa-3">
+                            <v-card-title class="indigo--text">Instructions</v-card-title>
+                            <v-card-text>
+                                <div>
+                                    <p class="font-weight-bold">Play Game</p>
+                                    <ul>
+                                        <li>Clicking on Play Game will start the game by picking numbers automatically.</li>
+                                        <li>Clicking on Pause Game will stop picking numbers.</li>
+                                        <li>Clicking on 3 dots opens a menu for updating picking numbe  rs interval.</li>
+                                    </ul>
+                                </div><br>
+                                <div>
+                                    <p class="font-weight-bold">Generate Tickets</p>
+                                    <ul>
+                                        <li>Clicking on Generate Tickets opens a popup for selecting number of tickets to be drawed.</li>
+                                        <li>Clicking on Generate after selecting number of tickets from slider will generate selected number of tickets in bottom of housie board.</li>
+                                    </ul><br>
+                                    <div class="ml-3">
+                                        <p class="font-weight-bold">Selected Tickets Panel</p>
+                                        <ul>
+                                            <li>Clicking on pencil icon in the panel reveals the ticket options.</li>
+                                            <li>Clicking on add icon in the panel allows to add new tickets.</li>
+                                            <li>Clicking on update icon in the panel updates all the selected tickets.</li>
+                                            <li>Clicking on bin icon in the panel will delete all the selected tickets with confirmation.</li>
+                                            <li>Clicking on arrow icon in the panel will either shows tickets panel or hides.</li>
+                                        </ul>
+                                    </div><br>
+                                    <div class="ml-3">
+                                            <p class="font-weight-bold">Tickets Options</p>
+                                            <ul>
+                                                <li>Clicking on pencil icon in the ticket allows to update ticket holder name.</li>
+                                                <li>Clicking on update icon in the ticket updates the selected ticket values.</li>
+                                                <li>Clicking on bin icon in the ticket will delete the selected ticket with confirmation.</li>
+                                            </ul>
+                                        </div>
+                                </div><br>
+                                <div>
+                                    <p class="font-weight-bold">Reset Board</p>
+                                    <ul>
+                                        <li>Clicking on Reset Board will reset the game with confirmation.</li>
+                                    </ul>
+                                </div>
+                            </v-card-text>
                         </v-card>
                     </v-dialog>
                 </center>
@@ -207,6 +262,7 @@
                     intervalTimeIndex: 0,
                     intervalTime: 4000,
                     seconds: [4,5,6,7],
+                    showInstructions: false,
                 }
             },
             methods: {
@@ -248,6 +304,7 @@
                     var self = this;
                     self.intervalTime = sec*1000;
                     clearInterval(self.interval);
+                    self.playGame = false;
                     self.startGame(true);
                 },
                 pickANumber(){
