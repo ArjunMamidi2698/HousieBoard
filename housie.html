@@ -196,6 +196,11 @@
                     var self = this;
                     self.playGame = action;
                     if(action){
+                        let msg = 'Starting Game, Get Ready Mates!!';
+                        if(self.previousNumbers.length > 0){
+                            msg = 'Continuing, Please check';
+                        }
+                        responsiveVoice.speak(msg);
                         self.interval = setInterval(() => {
                             if(self.numbersArray.length == 0){
                                 clearInterval(self.interval);
@@ -352,12 +357,15 @@
                 createTickets(count){
                     var self = this;
                     self.expanded = true;
-                    window.scrollTo(0,document.querySelector('#vue-main').scrollHeight);
                     const length = self.usedTickets.length;
                     for(let i=length;i<(count+length);i++){
                         self.generateTicket('noPopup');
                         self.useTicket(('User-'+(i+1)));
                     }
+                    setTimeout(() => {
+                        // window.scrollTo(0,(document.querySelector('#vue-main').scrollHeight - 500));
+                        window.scrollTo(0, 500);
+                    }, 200);
                     self.showTicket = false;
                     self.slider = 1;
                 },
