@@ -44,6 +44,7 @@
             width: 100%;
         }
     </style>
+    <script src='https://code.responsivevoice.org/responsivevoice.js'></script>
 </head>
 <body>
     <div id="vue-main">
@@ -52,6 +53,7 @@
                 <center>
                     <h1>Housie Board</h1><br>
                     <div>
+                        <!-- <v-btn color="primary" @click="!playGame ? startGame(true) : startGame(false)">{{!playGame ? 'Start Game' : 'Pause Game'}}</v-btn> -->
                         <v-btn color="primary" @click="pickANumber()">Generate Number</v-btn>
                         <v-btn color="primary" @click="generateTicket(null)">Generate Ticket</v-btn>
                         <v-btn color="primary" @click="resetColors()">Reset Board</v-btn>
@@ -179,6 +181,7 @@
             // },
             data() {
                 return {
+                    // playGame: false,
                     number: 0,
                     numberSequence: [],
                     numbersArray: [],
@@ -193,6 +196,17 @@
                 }
             },
             methods: {
+                // startGame(action){
+                //     var self = this;
+                //     self.playGame = action;
+                //     var interval = setInterval(() => {
+                //         self.pickANumber();
+                //     }, 4000);
+                //     if(!action || self.numbersArray.length == 0){
+                //         console.log(action);
+                //         clearInterval(this.interval);
+                //     } 
+                // },
                 getRandomNumber(min, max){
                     let step1 = max-min+1;
                     let step2 = Math.random()*step1;
@@ -211,6 +225,12 @@
                     if(self.numbersArray.length){
                         let index = this.getRandomNumber(0,self.numbersArray.length-1);
                         let randomNumber = self.numbersArray[index];
+                        if(randomNumber > 9){
+                            const speechString = randomNumber.toString().substring(0,1)+' '+randomNumber.toString().substring(1)+' . ';
+                            responsiveVoice.speak(speechString+randomNumber);
+                        } else {
+                            responsiveVoice.speak('single number'+randomNumber.toString());
+                        }
                         self.numbersArray.splice(index, 1);
                         self.previousNumbers.push(randomNumber);
                         document.getElementById(randomNumber).style.background = 'rgba(202, 184, 250, 0.59)';
