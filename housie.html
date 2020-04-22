@@ -114,16 +114,16 @@
                             </v-card-actions>
                         </v-card>
                     </v-dialog>
-                    <v-dialog v-model="showInstructions" width="800" height="500">
+                    <v-dialog v-model="showInstructions" width="700" height="500">
                         <v-card class="pa-3">
-                            <v-card-title class="indigo--text">Instructions</v-card-title>
+                            <v-card-title class="headline indigo--text">Instructions</v-card-title>
                             <v-card-text>
                                 <div>
                                     <p class="font-weight-bold">Play Game</p>
                                     <ul>
                                         <li>Clicking on Play Game will start the game by picking numbers automatically.</li>
                                         <li>Clicking on Pause Game will stop picking numbers.</li>
-                                        <li>Clicking on 3 dots opens a menu for updating picking numbe  rs interval.</li>
+                                        <li>Clicking on 3 dots opens a menu for updating picking numbers interval.</li>
                                     </ul>
                                 </div><br>
                                 <div>
@@ -158,6 +158,10 @@
                                     </ul>
                                 </div>
                             </v-card-text>
+                            <v-card-actions>
+                                <v-spacer></v-spacer>
+                                <v-btn text @click="showInstructions = false;" color="indigo">close</v-btn>
+                            </v-card-actions>
                         </v-card>
                     </v-dialog>
                 </center>
