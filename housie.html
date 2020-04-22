@@ -53,9 +53,12 @@
                 <center>
                     <h1>Housie Board</h1><br>
                     <div>
-                        <!-- <v-btn color="primary" @click="!playGame ? startGame(true) : startGame(false)">{{!playGame ? 'Start Game' : 'Pause Game'}}</v-btn> -->
-                        <v-btn color="primary" @click="pickANumber()">Generate Number</v-btn>
-                        <v-btn color="primary" @click="generateTicket(null)">Generate Ticket</v-btn>
+                        <v-btn color="primary" @click="!playGame ? startGame(true) : startGame(false)">
+                            {{!playGame ? 'Play Game' : 'Pause Game'}}
+                            <v-icon color="white" right>{{!playGame ? 'play_circle_outline' : 'pause_circle_outline'}}</v-icon>
+                        </v-btn>
+                        <!-- <v-btn color="primary" @click="pickANumber()">Generate Number</v-btn> -->
+                        <v-btn color="primary" @click="generateTicket(null)">Generate Tickets</v-btn>
                         <v-btn color="primary" @click="resetColors()">Reset Board</v-btn>
                     </div><br>
                     <div>
@@ -171,17 +174,9 @@
                     sessionStorage.setItem('usedTickets', JSON.stringify(this.usedTickets));
                 }
             },
-            // mounted(){
-            //     window.addEventListener('beforeunload', (event) => {
-            //     // Cancel the event as stated by the standard.
-            //     event.preventDefault();
-            //     // Chrome requires returnValue to be set.
-            //     event.returnValue = 'sure?';
-            //     });
-            // },
             data() {
                 return {
-                    // playGame: false,
+                    playGame: false,
                     number: 0,
                     numberSequence: [],
                     numbersArray: [],
@@ -193,20 +188,25 @@
                     editTickets: false,
                     updatedTicketName: null,
                     slider: 1,
+                    interval: null,
                 }
             },
             methods: {
-                // startGame(action){
-                //     var self = this;
-                //     self.playGame = action;
-                //     var interval = setInterval(() => {
-                //         self.pickANumber();
-                //     }, 4000);
-                //     if(!action || self.numbersArray.length == 0){
-                //         console.log(action);
-                //         clearInterval(this.interval);
-                //     } 
-                // },
+                startGame(action){
+                    var self = this;
+                    self.playGame = action;
+                    if(action){
+                        self.interval = setInterval(() => {
+                            if(self.numbersArray.length == 0){
+                                clearInterval(self.interval);
+                                self.playGame = false;
+                            }
+                            self.pickANumber();
+                        }, 4000);
+                    } else{
+                        clearInterval(self.interval);
+                    } 
+                },
                 getRandomNumber(min, max){
                     let step1 = max-min+1;
                     let step2 = Math.random()*step1;
@@ -235,7 +235,8 @@
                         self.previousNumbers.push(randomNumber);
                         document.getElementById(randomNumber).style.background = 'rgba(202, 184, 250, 0.59)';
                     } else{
-                       window.alert('Game Completed!!!!!!');
+                        responsiveVoice.speak('Game Completed!!!');
+                        // window.alert('Game Completed!!!!!!');
                     }
                 },
                 generateTicket(action){
@@ -317,15 +318,18 @@
                 },
                 deleteTickets(desc, ticketIndex){
                     var self = this;
-                    const msg = desc == 'All' ? 'All tickets will be deleted!!' : 'Selected ticket will be deleted!!';
-                    const ask = confirm(msg);
-                    if(ask){
-                        if(desc == 'All'){
-                            self.usedTickets = [];
-                        } else {
-                            self.usedTickets.splice(ticketIndex, 1);
+                    const msg = desc == 'All' ? 'All tickets will get deleted' : 'Selected ticket will get deleted';
+                    responsiveVoice.speak('Warning!! '+msg,'UK English Male');
+                    setTimeout(() => {
+                        const ask = confirm(msg+',sure?');
+                        if(ask){
+                            if(desc == 'All'){
+                                self.usedTickets = [];
+                            } else {
+                                self.usedTickets.splice(ticketIndex, 1);
+                            }
                         }
-                    }
+                    }, 500);
                 },
                 regenerateTickets(desc, index){
                     var self = this;
@@ -386,15 +390,18 @@
                     });
                 },
                 resetColors(){
-                    const ask = confirm('Are you sure?');
-                    if(ask){
-                        const list = document.querySelectorAll('.cell');
-                        list.forEach((element) => {
-                            element.style.background = 'white';
-                        });
-                        this.numbersArray = this.createNumbersArray(1, 90);
-                        this.previousNumbers = [];
-                    }
+                    responsiveVoice.speak('Warning!! Taken numbers will get deleted','UK English Male');
+                    setTimeout(() => {
+                        const ask = confirm('Taken numbers will get deleted,sure?');
+                        if(ask){
+                            const list = document.querySelectorAll('.cell');
+                            list.forEach((element) => {
+                                element.style.background = 'white';
+                            });
+                            this.numbersArray = this.createNumbersArray(1, 90);
+                            this.previousNumbers = [];
+                        }    
+                    }, 500);
                 },
             }
         })
