@@ -227,6 +227,7 @@
                             self.pickANumber();
                         }, self.intervalTime);
                     } else{
+                        responsiveVoice.speak('Game Paused!!!');
                         clearInterval(self.interval);
                     } 
                 },
