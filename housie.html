@@ -56,6 +56,7 @@
         <v-app>
             <v-container>
                 <center>
+                    <!-- Housie Board -->
                     <h1>Housie Board</h1>
                     <v-btn icon large class="instructions-icon" @click="showInstructions = true">
                         <v-icon large>help_outline</v-icon>
@@ -99,6 +100,9 @@
                             </tr>
                         </template>
                     </v-simple-table><br>
+                    <!-- END - Housie Board -->
+
+                    <!-- Generate Tickets Popup-->
                     <v-dialog v-model="showTicket" persistent width="500" height="500">
                         <v-card class="pa-3">
                             <v-card-title>How many tickets you need?</v-card-title><br>
@@ -114,11 +118,30 @@
                             </v-card-actions>
                         </v-card>
                     </v-dialog>
+                    <!-- END - Generate Tickets Popup-->
+
+                    <!-- Instructions Popup -->
                     <v-dialog v-model="showInstructions" width="700" height="500">
                         <v-card class="pa-3">
                             <v-card-title class="headline indigo--text">Instructions</v-card-title>
                             <v-card-text>
                                 <div>
+                                    <p class="title font-weight-bold">How to Play:</p>
+                                    <ul>
+                                        <li>Every player will have a unique ticket.</li>
+                                        <li>Users should check the numbers picked in housie board and tick the numbers in their ticket.</li>
+                                        <li>If all the numbers of the ticket is ticked, that ticket holder is considered as Housie winner</li>
+                                        <li>Remaining prizes are included depends on the team playing like,</li>
+                                        <ul>
+                                            <li>Love Birds - Any horizantal pair of 2 numbers of the ticket.</li>
+                                            <li>Temperature - Smallest and Largest number of ticket.</li>
+                                            <li>Fast Five - First five numbers of the ticket.</li>
+                                            <li>3 Lines - All 5 numbers of any of 3 horizantal lines of the ticket.</li>
+                                        </ul>
+                                    </ul>
+                                </div><br>
+                                <div>
+                                    <p class="title font-weight-bold">How to Use:</p>
                                     <p class="font-weight-bold">Play Game</p>
                                     <ul>
                                         <li>Clicking on Play Game will start the game by picking numbers automatically.</li>
@@ -164,9 +187,11 @@
                             </v-card-actions>
                         </v-card>
                     </v-dialog>
+                    <!-- END - Instructions Popup -->
                 </center>
             </v-container>
             <v-container fluid>
+                <!-- Selected Tickets Panel-->
                 <v-card class="pa-3 usedTickets-card" color="indigo lighten-4" v-if="usedTickets.length > 0" >
                     <span class="title">Selected Tickets({{usedTickets.length}})</span>
                     <div class="float-right">
@@ -181,6 +206,7 @@
                             <v-col cols="6" class="pa-4" v-for="(ticket,index) in usedTickets">
                                 <v-flex xs12>
                                     <v-card class="pa-3 usedTickets-inside-card">
+                                        <!-- Ticket Options-->
                                         <v-layout>
                                             <span v-show="!ticket.updateTicketHolder" class="font-weight-black title align-self-end">{{ticket.name}}</span>
                                             <div v-show="editTickets">
@@ -196,6 +222,9 @@
                                                 </div>
                                             </div>
                                         </v-layout>
+                                        <!-- END - Ticket Options-->
+
+                                        <!-- Ticket creation-->
                                         <v-flex xs12 overflow-hidden>
                                             <v-simple-table class="table-overflow">
                                                 <template>
@@ -209,12 +238,14 @@
                                                 </template>
                                             </v-simple-table>
                                         </v-flex>
+                                        <!-- End - Ticket creation -->
                                     </v-card>
                                 </v-flex>
                             </v-col>
                         </v-row>
                     </div>
                 </v-card>
+                <!-- END - Selected Tickets Panel-->
             </v-container>
             <p class="text-center">Created by - <span class="font-italic font-weight-black">ARJUN MAMIDI</span></p>
         </v-app>
@@ -237,16 +268,14 @@
                 this.numbersArray = this.createNumbersArray(1, 90);
                 this.getValuesFromLocalStorage();
             },
-            watch: {
-                previousNumbers(){
-                    sessionStorage.setItem('previousNumbers', JSON.stringify(this.previousNumbers));
-                },
-                numbersArray(){
-                    sessionStorage.setItem('numbersArray', JSON.stringify(this.numbersArray));
-                },
-                usedTickets(){
-                    sessionStorage.setItem('usedTickets', JSON.stringify(this.usedTickets));
-                }
+            mounted(){
+                window.addEventListener('beforeunload', (event) => {
+                    // // Cancel the event as stated by the standard.
+                    // event.preventDefault();
+                    // // Chrome requires returnValue to be set.
+                    // event.returnValue = 'sure?';
+                    this.persistData();
+                });
             },
             data() {
                 return {
@@ -270,6 +299,12 @@
                 }
             },
             methods: {
+                persistData(){
+                    var self = this;
+                    sessionStorage.setItem('previousNumbers', JSON.stringify(self.previousNumbers));
+                    sessionStorage.setItem('numbersArray', JSON.stringify(self.numbersArray));
+                    sessionStorage.setItem('usedTickets', JSON.stringify(self.usedTickets));
+                },
                 startGame(action){
                     var self = this;
                     self.playGame = action;
@@ -420,7 +455,7 @@
                                 self.usedTickets.splice(ticketIndex, 1);
                             }
                         }
-                    }, 500);
+                    }, 1000);
                 },
                 regenerateTickets(desc, index){
                     var self = this;
@@ -495,7 +530,7 @@
                             this.numbersArray = this.createNumbersArray(1, 90);
                             this.previousNumbers = [];
                         }    
-                    }, 500);
+                    }, 1000);
                 },
             }
         })
