@@ -30,7 +30,7 @@
         }
         .usedTickets-inside-card{
             display: inline-grid;
-            width: -webkit-fill-available;
+            width: 100%;
         }
         .ticket-options{
             position: absolute;
@@ -81,7 +81,6 @@
                                 </v-list>
                             </v-menu>
                         </v-btn>
-                        
                         <!-- <v-btn color="primary" @click="pickANumber()">Generate Number</v-btn> -->
                         <v-btn color="primary" @click="generateTicket(null)">Generate Tickets</v-btn>
                         <v-btn color="primary" @click="resetColors()">Reset Board</v-btn>
@@ -93,7 +92,7 @@
                     </div>
                     <v-simple-table>
                         <template>
-                            <tr v-for="i in numberSequence">
+                            <tr v-for="i in boardNumberSequence">
                                 <td :id="j" class="cell pa-3 text-center" v-for="j in i">
                                     <span>{{j}}</span>
                                 </td>
@@ -262,11 +261,11 @@
                         num++;
                         internalArray.push(num);                        
                     }
-                    this.numberSequence[i] = internalArray;
+                    this.boardNumberSequence[i] = internalArray;
                     internalArray = [];
                 }
                 this.numbersArray = this.createNumbersArray(1, 90);
-                this.getValuesFromLocalStorage();
+                this.getValuesFromSessionStorage();
             },
             mounted(){
                 window.addEventListener('beforeunload', (event) => {
@@ -281,7 +280,7 @@
                 return {
                     playGame: false,
                     number: 0,
-                    numberSequence: [],
+                    boardNumberSequence: [],
                     numbersArray: [],
                     previousNumbers: [],
                     showTicket: false,
@@ -299,12 +298,46 @@
                 }
             },
             methods: {
+                // creates initial 90 numbers to get picked
+                createNumbersArray(start, end){
+                    let arr = [];
+                    for(let i = start; i <= end; i++){
+                        arr.push(i);
+                    }
+                    return arr;
+                },
+
+                // returns values from storage to maintain persistence
+                getValuesFromSessionStorage(){
+                    var self = this;
+                    if(JSON.parse(sessionStorage.getItem('previousNumbers')) != null && JSON.parse(sessionStorage.getItem('numbersArray')) != null){
+                        self.previousNumbers = JSON.parse(sessionStorage.getItem('previousNumbers'));
+                        self.numbersArray = JSON.parse(sessionStorage.getItem('numbersArray'));
+                        self.addColors();
+                    }
+                    if(JSON.parse(sessionStorage.getItem('usedTickets'))){
+                        self.usedTickets = JSON.parse(sessionStorage.getItem('usedTickets'));
+                    }
+                },
+                // add colors to the already picked numbers
+                addColors(){
+                    var self = this;
+                    self.previousNumbers.forEach( (num) => {
+                        setTimeout(() => {
+                            document.getElementById(num).style.background = 'rgba(202, 184, 250, 0.59)';
+                        }, 100);
+                    });
+                },
+
+                // persist data for browser reloads
                 persistData(){
                     var self = this;
                     sessionStorage.setItem('previousNumbers', JSON.stringify(self.previousNumbers));
                     sessionStorage.setItem('numbersArray', JSON.stringify(self.numbersArray));
                     sessionStorage.setItem('usedTickets', JSON.stringify(self.usedTickets));
                 },
+
+                // creates intervals for picking numbers
                 startGame(action){
                     var self = this;
                     self.playGame = action;
@@ -326,30 +359,11 @@
                         clearInterval(self.interval);
                     } 
                 },
-                getRandomNumber(min, max){
-                    let step1 = max-min+1;
-                    let step2 = Math.random()*step1;
-                    let result = Math.floor(step2)+min;
-                    return result;
-                },
-                createNumbersArray(start, end){
-                    let arr = [];
-                    for(let i = start; i <= end; i++){
-                        arr.push(i);
-                    }
-                    return arr;
-                },
-                updatePickNumberTime(sec){
-                    var self = this;
-                    self.intervalTime = sec*1000;
-                    clearInterval(self.interval);
-                    self.playGame = false;
-                    self.startGame(true);
-                },
+                // Take a random number from numbers array
                 pickANumber(){
                     var self = this;
                     if(self.numbersArray.length){
-                        let index = this.getRandomNumber(0,self.numbersArray.length-1);
+                        let index = this.getRandomNumber(0, self.numbersArray.length-1);
                         let randomNumber = self.numbersArray[index];
                         if(randomNumber > 9){
                             const speechString = randomNumber.toString().substring(0,1)+' '+randomNumber.toString().substring(1)+' . ';
@@ -365,6 +379,51 @@
                         // window.alert('Game Completed!!!!!!');
                     }
                 },
+                // returns a random number within range
+                getRandomNumber(min, generatedmax){
+                    let step1 = max-min+1;
+                    let step2 = Math.random()*step1;
+                    let result = Math.floor(step2)+min;
+                    return result;
+                },
+
+                // updates picking numbers interval
+                updatePickNumberTime(sec){
+                    var self = this;
+                    self.intervalTime = sec*1000;
+                    clearInterval(self.interval);
+                    self.playGame = false;
+                    self.startGame(true);
+                },
+
+                // creates selected number of tickets
+                createTickets(count){
+                    var self = this;
+                    self.expanded = true;
+                    const length = self.usedTickets.length;
+                    for(let i=length;i<(count+length);i++){
+                        self.generateTicket('noPopup');
+                        self.useTicket(('User-'+(i+1)));
+                    }
+                    setTimeout(() => {
+                        // window.scrollTo(0,(document.querySelector('#vue-main').scrollHeight - 500));
+                        window.scrollTo(0, 500);
+                    }, 200);
+                    self.showTicket = false;
+                    self.slider = 1;
+                },
+                // add the generated ticket into selected tickets panel
+                useTicket(ticketHolder){
+                    var self = this;
+                    const ticketObj = {
+                        name: ticketHolder,
+                        ticket: self.ticket,
+                        updateTicketHolder: false,
+                    }
+                    self.usedTickets.push(ticketObj);
+                },
+
+                // generates a ticket
                 generateTicket(action){
                     var self = this;
                     if(action == null){
@@ -381,14 +440,15 @@
                         for(let j = 0;j < 3;j++){
                             let indexArray = indexMatrix[j];
                             if(indexArray.indexOf(i) > -1){
-                                let max = (i + 1) * 10, min = i * 10;
-                                if(min == 0){ min = 1};
-                                let randomNumber = Math.floor(Math.random() * (max - min)) + min;
+                                let max = ((i + 1) * 10) - 1, min = i * 10;
+                                if(min == 0){ min = 1;};
+                                if(max == 89){max = 90;};
+                                let randomNumber = self.getRandomNumber(min, max);
                                 if(col.indexOf(randomNumber) < 0){
                                     col.push(randomNumber);
                                 } else {
                                     while(col.indexOf(randomNumber) > -1){
-                                        randomNumber = Math.floor(Math.random() * (max - min)) + min;
+                                        randomNumber = self.getRandomNumber(min, max);
                                     }
                                     col.push(randomNumber);
                                 }
@@ -405,6 +465,7 @@
                         });
                     }
                 },
+                // returns indexes of the tickets
                 getIndexMatrix(){
                     const self = this;
                     let indexMatrix = [];
@@ -413,6 +474,7 @@
                         if(i === 1){
                             const numberSequence = [0,1,2,3,4,5,6,7,8];
                             for(let j = 0; j < 5; j++){
+                                // removing indexes of first row to avoid blank spaces
                                 numberSequence.splice(numberSequence.indexOf(indexMatrix[0][j]), 1);
                             }
                             indexArray.push(...numberSequence);
@@ -429,6 +491,7 @@
                     }
                     return indexMatrix;
                 },
+                // check for love birds case => not allowing more than 2 sequence in a line
                 checkIsThreeSequence(indexArray){
                     if(indexArray.length > 2){
                         for(let i = 0;i < indexArray.length - 2;i++){
@@ -442,6 +505,22 @@
                         return indexArray;
                     }
                 },
+
+                // Regenerate ticket values, here "desc" describes all tickets or selected ticket to get generated
+                regenerateTickets(desc, index){
+                    var self = this;
+                    if(desc == 'All'){
+                        self.usedTickets.forEach( (ticket) => {
+                            self.generateTicket('noPopup');
+                            ticket.ticket = self.ticket;
+                        })
+                    } else if(desc == 'selfTicket'){
+                        self.generateTicket('noPopup');
+                        self.usedTickets[index].ticket = self.ticket;
+                    }
+                },
+
+                // Delete tickets, here "desc" describes all tickets or selected ticket to get deleted
                 deleteTickets(desc, ticketIndex){
                     var self = this;
                     const msg = desc == 'All' ? 'All tickets will get deleted' : 'Selected ticket will get deleted';
@@ -457,67 +536,16 @@
                         }
                     }, 1000);
                 },
-                regenerateTickets(desc, index){
-                    var self = this;
-                    if(desc == 'All'){
-                        self.usedTickets.forEach( (ticket) => {
-                            self.generateTicket('noPopup');
-                            ticket.ticket = self.ticket;
-                        })
-                    } else if(desc == 'selfTicket'){
-                        self.generateTicket('noPopup');
-                        self.usedTickets[index].ticket = self.ticket;
-                    }
-                },
+                
+                // updates ticket holder name
                 updateTicketHolderName(index){
                     var self = this;
                     self.usedTickets[index].name = self.updatedTicketName;
                     self.usedTickets[index].updateTicketHolder = false;
                     self.updatedTicketName = null;
                 },
-                createTickets(count){
-                    var self = this;
-                    self.expanded = true;
-                    const length = self.usedTickets.length;
-                    for(let i=length;i<(count+length);i++){
-                        self.generateTicket('noPopup');
-                        self.useTicket(('User-'+(i+1)));
-                    }
-                    setTimeout(() => {
-                        // window.scrollTo(0,(document.querySelector('#vue-main').scrollHeight - 500));
-                        window.scrollTo(0, 500);
-                    }, 200);
-                    self.showTicket = false;
-                    self.slider = 1;
-                },
-                useTicket(ticketHolder){
-                    var self = this;
-                    const ticketObj = {
-                        name: ticketHolder,
-                        ticket: self.ticket,
-                        updateTicketHolder: false,
-                    }
-                    self.usedTickets.push(ticketObj);
-                },
-                getValuesFromLocalStorage(){
-                    var self = this;
-                    if(JSON.parse(sessionStorage.getItem('previousNumbers')) != null && JSON.parse(sessionStorage.getItem('numbersArray')) != null){
-                        self.previousNumbers = JSON.parse(sessionStorage.getItem('previousNumbers'));
-                        self.numbersArray = JSON.parse(sessionStorage.getItem('numbersArray'));
-                        self.addColors();
-                    }
-                    if(JSON.parse(sessionStorage.getItem('usedTickets'))){
-                        self.usedTickets = JSON.parse(sessionStorage.getItem('usedTickets'));
-                    }
-                },
-                addColors(){
-                    var self = this;
-                    self.previousNumbers.forEach( (num) => {
-                        setTimeout(() => {
-                            document.getElementById(num).style.background = 'rgba(202, 184, 250, 0.59)';
-                        }, 100);
-                    });
-                },
+                
+                // Reset all the picked numbers and removed colors
                 resetColors(){
                     responsiveVoice.speak('Warning!! Taken numbers will get deleted','UK English Male');
                     setTimeout(() => {
