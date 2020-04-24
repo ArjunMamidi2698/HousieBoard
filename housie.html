@@ -63,21 +63,39 @@
                     </v-btn>
                     <br>
                     <div>
-                        <v-btn color="primary" @click="!playGame ? startGame(true) : startGame(false)">
-                            <v-icon color="white" left>{{!playGame ? 'play_circle_outline' : 'pause_circle_outline'}}</v-icon>
-                            {{!playGame ? 'Play Game' : 'Pause Game'}}
-                            <v-menu open-on-hover origin="center center" transition="scale-transition">
+                        <v-btn color="primary" @click="autoPick ? (!playGame ? startGame(true) : startGame(false)) : pickANumber()">
+                            <v-icon color="white" v-if="autoPick" left>{{!playGame ? 'play_circle_outline' : 'pause_circle_outline'}}</v-icon>
+                            {{autoPick ? (!playGame ? 'Play Game' : 'Pause Game') : 'Pick a Number'}}
+                            <v-menu open-on-hover :close-on-content-click="false" origin="center center" transition="scale-transition">
                                 <template v-slot:activator="{ on }">
-                                    <v-btn icon dark color="primary" v-on="on">
+                                    <v-btn icon dark class="pa-0" color="primary" v-on="on">
                                         <v-icon right color="white">more_vert</v-icon>
                                     </v-btn>
                                 </template>
-                                <v-list>
-                                    <v-list-item-group v-model="intervalTimeIndex">
-                                        <v-list-item v-for="sec in seconds" color="darkgrey" @click="updatePickNumberTime(sec)">
-                                            <v-list-tile-title>{{sec}} seconds</v-list-tile-title>
-                                        </v-list-item>    
-                                    </v-list-item-group>
+                                <v-list class="pa-0">
+                                    <v-list-item @mouseout="showIntervalList = false">
+                                        <v-list-title>
+                                                <v-switch v-model="autoPick" label="Auto Pick" color="success" class="ma-0 my-2" dense hide-details></v-switch>
+                                        </v-list-title>
+                                    </v-list-item>
+                                    <v-divider></v-divider>
+                                    <v-list-item @mouseout="showIntervalList = false">
+                                        <v-list-title>
+                                                <v-switch v-model="voiceEnable" label="Enable Voice" color="success" class="ma-0 my-2" dense hide-details></v-switch>
+                                        </v-list-title>
+                                    </v-list-item>
+                                    <v-divider></v-divider>
+                                    <v-list-item v-if="autoPick" class="d-inline" @mouseover="showIntervalList = true">
+                                        <v-list-title class="font-weight-black d-inline-flex py-3">
+                                            Picking Interval 
+                                            <v-icon>{{showIntervalList ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}}</v-icon>
+                                        </v-list-title>
+                                        <v-list-item-group v-show="showIntervalList" v-model="intervalTimeIndex">
+                                            <v-list-item v-for="sec in seconds" color="darkgrey" @click="updatePickNumberTime(sec)">
+                                                <v-list-item-title>{{sec}} seconds</v-list-item-title>
+                                            </v-list-item>
+                                        </v-list-item-group>
+                                    </v-list-item>
                                 </v-list>
                             </v-menu>
                         </v-btn>
@@ -278,6 +296,8 @@
             },
             data() {
                 return {
+                    autoPick: true,
+                    voiceEnable: true,
                     playGame: false,
                     number: 0,
                     boardNumberSequence: [],
@@ -295,6 +315,14 @@
                     intervalTime: 4000,
                     seconds: [4,5,6,7],
                     showInstructions: false,
+                    showIntervalList: false,
+                }
+            },
+            watch: {
+                autoPick(){
+                    if(!this.autoPick){
+                        this.startGame(false);
+                    }
                 }
             },
             methods: {
@@ -346,7 +374,7 @@
                         if(self.previousNumbers.length > 0){
                             msg = 'Continuing, Please check';
                         }
-                        responsiveVoice.speak(msg);
+                        self.speak(msg, 'US English Female');
                         self.interval = setInterval(() => {
                             if(self.numbersArray.length == 0){
                                 clearInterval(self.interval);
@@ -355,7 +383,7 @@
                             self.pickANumber();
                         }, self.intervalTime);
                     } else{
-                        responsiveVoice.speak('Game Paused!!!');
+                        self.speak('Game Paused!!!', 'US English Female');
                         clearInterval(self.interval);
                     } 
                 },
@@ -367,16 +395,16 @@
                         let randomNumber = self.numbersArray[index];
                         if(randomNumber > 9){
                             const speechString = randomNumber.toString().substring(0,1)+' '+randomNumber.toString().substring(1)+' . ';
-                            responsiveVoice.speak(speechString+randomNumber);
+                            self.speak((speechString+randomNumber), 'US English Female');
                         } else {
-                            responsiveVoice.speak('single number'+randomNumber.toString());
+                            self.speak(('single number'+randomNumber.toString()), 'US English Female');
                         }
                         self.numbersArray.splice(index, 1);
                         self.previousNumbers.push(randomNumber);
                         document.getElementById(randomNumber).style.background = 'rgba(202, 184, 250, 0.59)';
                     } else{
-                        responsiveVoice.speak('Game Completed!!!');
-                        // window.alert('Game Completed!!!!!!');
+                        self.speak('Game Completed!!!', 'US English Female');
+                        window.alert('Game Completed!!!!!!');
                     }
                 },
                 // returns a random number within range
@@ -524,7 +552,7 @@
                 deleteTickets(desc, ticketIndex){
                     var self = this;
                     const msg = desc == 'All' ? 'All tickets will get deleted' : 'Selected ticket will get deleted';
-                    responsiveVoice.speak('Warning!! '+msg,'UK English Male');
+                    self.speak(('Warning!! '+msg), 'US English Male');
                     setTimeout(() => {
                         const ask = confirm(msg+',sure?');
                         if(ask){
@@ -547,7 +575,8 @@
                 
                 // Reset all the picked numbers and removed colors
                 resetColors(){
-                    responsiveVoice.speak('Warning!! Taken numbers will get deleted','UK English Male');
+                    var self = this;
+                    self.speak('Warning!! Taken numbers will get deleted', 'US English Male');
                     setTimeout(() => {
                         const ask = confirm('Taken numbers will get deleted,sure?');
                         if(ask){
@@ -560,6 +589,14 @@
                         }    
                     }, 1000);
                 },
+
+                // Voice
+                speak(msg, voice){
+                    var self = this;
+                    if(self.voiceEnable){
+                        responsiveVoice.speak(msg, voice);
+                    }
+                }
             }
         })
     </script>
