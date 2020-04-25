@@ -154,6 +154,8 @@
                                             <li>Temperature - Smallest and Largest number of ticket.</li>
                                             <li>Fast Five - First five numbers of the ticket.</li>
                                             <li>3 Lines - All 5 numbers of any of 3 horizantal lines of the ticket.</li>
+                                            <li>Below - All numbers between 1-49 of the ticket.</li>
+                                            <li>Above - All numbers between 50-90 of the ticket.</li>
                                         </ul>
                                     </ul>
                                 </div><br>
@@ -163,7 +165,13 @@
                                     <ul>
                                         <li>Clicking on Play Game will start the game by picking numbers automatically.</li>
                                         <li>Clicking on Pause Game will stop picking numbers.</li>
-                                        <li>Clicking on 3 dots opens a menu for updating picking numbers interval.</li>
+                                        <li>Clicking on 3 dots opens a menu for picking options</li>
+                                        <ul>
+                                            <li>Auto Pick enabled - Pick numbers one by one automatically with interval selected.</li>
+                                            <li>Auto Pick disabled - Pick numbers by clicking on PICK NUMBER button.</li>
+                                            <li>Voice Enabled - Speaks picked numbers.</li>
+                                            <li>Pick Interval - Interval between picking numbers(available only if auto pick enabled).</li>
+                                        </ul>
                                     </ul>
                                 </div><br>
                                 <div>
@@ -465,21 +473,16 @@
                     let indexMatrix = self.getIndexMatrix();
                     for(let i = 0;i < 9;i++){
                         let col = [],colIndexArray = [];
+                        let max = ((i + 1) * 10) - 1, min = i * 10;
+                        if(min == 0){ min = 1;};
+                        if(max == 89){max = 90;};
+                        let colArray = self.createNumbersArray(min,max);
                         for(let j = 0;j < 3;j++){
                             let indexArray = indexMatrix[j];
                             if(indexArray.indexOf(i) > -1){
-                                let max = ((i + 1) * 10) - 1, min = i * 10;
-                                if(min == 0){ min = 1;};
-                                if(max == 89){max = 90;};
-                                let randomNumber = self.getRandomNumber(min, max);
-                                if(col.indexOf(randomNumber) < 0){
-                                    col.push(randomNumber);
-                                } else {
-                                    while(col.indexOf(randomNumber) > -1){
-                                        randomNumber = self.getRandomNumber(min, max);
-                                    }
-                                    col.push(randomNumber);
-                                }
+                                let index = self.getRandomNumber(0, (colArray.length-1)); 
+                                col.push(colArray[index]);
+                                colArray.splice(index, 1);
                                 colIndexArray.push(j);
                             }
                         }
@@ -499,21 +502,20 @@
                     let indexMatrix = [];
                     for(let i = 0;i < 3;i++){
                         let indexArray = [];
+                        let indexSequence = self.createNumbersArray(0, 8);
                         if(i === 1){
-                            const numberSequence = [0,1,2,3,4,5,6,7,8];
                             for(let j = 0; j < 5; j++){
                                 // removing indexes of first row to avoid blank spaces
-                                numberSequence.splice(numberSequence.indexOf(indexMatrix[0][j]), 1);
+                                indexSequence.splice(indexSequence.indexOf(indexMatrix[0][j]), 1);
                             }
-                            indexArray.push(...numberSequence);
+                            indexArray.push(...indexSequence);
                         }
                         while(indexArray.length < 5){
-                            const randomNumber = Math.floor(Math.random() * 9);
-                            if(indexArray.indexOf(randomNumber) < 0){
-                                indexArray.push(randomNumber);
-                                indexArray.sort();
-                                indexArray = self.checkIsThreeSequence(indexArray);
-                            }  
+                            let index = self.getRandomNumber(0, (indexSequence.length-1)); 
+                            indexArray.push(indexSequence[index]);
+                            indexSequence.splice(index, 1);
+                            indexArray.sort();
+                            indexArray = self.checkIsThreeSequence(indexArray);
                         }
                         indexMatrix[i] = indexArray.sort();
                     }
@@ -528,10 +530,8 @@
                                 return indexArray;
                             }
                         }
-                        return indexArray;
-                    } else {
-                        return indexArray;
                     }
+                    return indexArray;
                 },
 
                 // Regenerate ticket values, here "desc" describes all tickets or selected ticket to get generated
