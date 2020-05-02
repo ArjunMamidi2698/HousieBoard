@@ -1,0 +1,29 @@
+{
+  "name": "housieboard",
+  "version": "1.0.0",
+  "description": "Indian BINGO, have fun.",
+  "main": "housieServer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon housieServer.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ArjunMamidi2698/HousieBoard.git"
+  },
+  "author": "Arjun Mamidi",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ArjunMamidi2698/HousieBoard/issues"
+  },
+  "homepage": "https://github.com/ArjunMamidi2698/HousieBoard#readme",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "http": "0.0.1-security",
+    "mongoose": "^5.9.10",
+    "nodemon": "^2.0.3",
+    "socket.io": "^2.3.0"
+  }
+}
