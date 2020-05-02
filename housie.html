@@ -13,6 +13,7 @@
     <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/vue-resource@1.5.1"></script> -->
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script> -->
     <style>
         table, tr>td{
@@ -40,13 +41,13 @@
         .v-card__actions{
             margin-right: 23px;
         }
-        .cards-slider{
-            width: 100%;
-        }
         .instructions-icon{
             position: absolute;
             right: 10px;
             top: 10px;
+        }
+        .full-width{
+            width: 100%;
         }
     </style>
     <script src="https://code.responsivevoice.org/responsivevoice.js?key=ZoF2rQuV"></script>
@@ -54,6 +55,17 @@
 <body>
     <div id="vue-main">
         <v-app>
+            <v-snackbar
+                v-model="showSnackbar"
+                top center :timeout=10000
+                :color="snackbarColor"
+                auto-height>
+                <v-icon dark v-if="snackbarColor == 'error' || snackbarColor == 'orange'" class="pr-1">warning</v-icon>
+                <v-icon dark v-if="snackbarColor == '#54a7ff'" class="pr-1">info_outline</v-icon>
+                <v-icon dark v-if="snackbarColor == 'success'" class="pr-1">done</v-icon>
+                <b v-text="snackbarMessage"></b>
+                <v-btn color="black" text @click="$emit('close')">Close</v-btn>
+            </v-snackbar>
             <v-container>
                 <center>
                     <!-- Housie Board -->
@@ -63,45 +75,71 @@
                     </v-btn>
                     <br>
                     <div>
-                        <v-btn color="primary" @click="autoPick ? (!playGame ? startGame(true) : startGame(false)) : pickANumber()">
-                            <v-icon color="white" v-if="autoPick" left>{{!playGame ? 'play_circle_outline' : 'pause_circle_outline'}}</v-icon>
-                            {{autoPick ? (!playGame ? 'Play Game' : 'Pause Game') : 'Pick a Number'}}
-                            <v-menu open-on-hover :close-on-content-click="false" origin="center center" transition="scale-transition">
-                                <template v-slot:activator="{ on }">
-                                    <v-btn icon dark class="pa-0" color="primary" v-on="on">
-                                        <v-icon right color="white">more_vert</v-icon>
-                                    </v-btn>
-                                </template>
-                                <v-list class="pa-0">
-                                    <v-list-item @mouseout="showIntervalList = false">
-                                        <v-list-title>
-                                                <v-switch v-model="autoPick" label="Auto Pick" color="success" class="ma-0 my-2" dense hide-details></v-switch>
-                                        </v-list-title>
-                                    </v-list-item>
-                                    <v-divider></v-divider>
-                                    <v-list-item @mouseout="showIntervalList = false">
-                                        <v-list-title>
-                                                <v-switch v-model="voiceEnable" label="Enable Voice" color="success" class="ma-0 my-2" dense hide-details></v-switch>
-                                        </v-list-title>
-                                    </v-list-item>
-                                    <v-divider></v-divider>
-                                    <v-list-item v-if="autoPick" class="d-inline" @mouseover="showIntervalList = true">
-                                        <v-list-title class="font-weight-black d-inline-flex py-3">
-                                            Picking Interval 
-                                            <v-icon>{{showIntervalList ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}}</v-icon>
-                                        </v-list-title>
-                                        <v-list-item-group v-show="showIntervalList" v-model="intervalTimeIndex">
-                                            <v-list-item v-for="sec in seconds" color="darkgrey" @click="updatePickNumberTime(sec)">
-                                                <v-list-item-title>{{sec}} seconds</v-list-item-title>
-                                            </v-list-item>
-                                        </v-list-item-group>
-                                    </v-list-item>
-                                </v-list>
-                            </v-menu>
-                        </v-btn>
-                        <!-- <v-btn color="primary" @click="pickANumber()">Generate Number</v-btn> -->
-                        <v-btn color="primary" @click="generateTicket(null)">Generate Tickets</v-btn>
-                        <v-btn color="primary" @click="resetColors()">Reset Board</v-btn>
+                        <!-- Room Admin options -->
+                        <template v-if="status == 'null' || status == null || (status !=null && status.startsWith('Room Created'))">
+                            <v-btn color="primary" @click="autoPick ? (!playGame ? startGame(true) : startGame(false)) : pickANumber()">
+                                <v-icon color="white" v-if="autoPick" left>{{!playGame ? 'play_circle_outline' : 'pause_circle_outline'}}</v-icon>
+                                {{autoPick ? (!playGame ? 'Play Game' : 'Pause Game') : 'Pick a Number'}}
+                                <v-menu open-on-hover :close-on-content-click="false" origin="center center" transition="scale-transition">
+                                    <template v-slot:activator="{ on }">
+                                        <v-btn icon dark class="pa-0" color="primary" v-on="on">
+                                            <v-icon right color="white">more_vert</v-icon>
+                                        </v-btn>
+                                    </template>
+                                    <v-list class="pa-0">
+                                        <v-list-item @mouseout="showIntervalList = false">
+                                            <v-list-title>
+                                                    <v-switch v-model="autoPick" label="Auto Pick" color="success" class="ma-0 my-2" dense hide-details></v-switch>
+                                            </v-list-title>
+                                        </v-list-item>
+                                        <v-divider></v-divider>
+                                        <v-list-item @mouseout="showIntervalList = false">
+                                            <v-list-title>
+                                                    <v-switch v-model="voiceEnable" label="Enable Voice" color="success" class="ma-0 my-2" dense hide-details></v-switch>
+                                            </v-list-title>
+                                        </v-list-item>
+                                        <v-divider></v-divider>
+                                        <v-list-item v-if="autoPick" class="d-inline" @mouseover="showIntervalList = true">
+                                            <v-list-title class="font-weight-black d-inline-flex py-3">
+                                                Picking Interval 
+                                                <v-icon>{{showIntervalList ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}}</v-icon>
+                                            </v-list-title>
+                                            <v-list-item-group v-show="showIntervalList" v-model="intervalTimeIndex">
+                                                <v-list-item v-for="sec in seconds" color="darkgrey" @click="updatePickNumberTime(sec)">
+                                                    <v-list-item-title>{{sec}} seconds</v-list-item-title>
+                                                </v-list-item>
+                                            </v-list-item-group>
+                                        </v-list-item>
+                                    </v-list>
+                                </v-menu>
+                            </v-btn>
+                        </template>
+                        <!-- END - Room Admin options-->
+
+                        <template v-if="status == 'null' || status == null">
+                            <v-btn color="primary" @click="generateTicket(null)">Generate Tickets</v-btn>
+                            <v-btn color="primary" @click="resetColors(null)">Reset Board</v-btn>
+                            <!-- <v-btn color="primary" dark><v-switch class="ma-0 pa-0" v-model="goOnline" label="Go Online" dense hide-details></v-switch></v-btn> -->
+                        </template>
+                        <!-- Room Player options-->
+                        <template v-if="status != null && status.startsWith('Room Joined')">
+                            <v-btn color="primary" dark><v-switch class="ma-0 pa-0" v-model="voiceEnable" label="Enable Voice" dense hide-details></v-switch></v-btn>
+                        </template>
+                        <!-- END - Room Player options-->
+
+                        <!-- Not in Room options-->
+                        <template v-if="status == 'null' || status == null">
+                            <v-btn color="primary" @click="showRoompopup = true;isCreate = true">Create Room</v-btn>
+                            <v-btn color="primary" @click="showRoompopup = true;isCreate = false">Join Room</v-btn>
+                        </template>
+                        <!-- END - Not in Room options-->
+
+                        <!-- Every User options-->
+                        <v-btn color="primary" v-else @click="exitRoom()">exit room</v-btn>
+                        <!-- END -  Every User options-->
+                    </div><br>
+                    <div>
+                        <span>{{status != 'null' ? status: null}}</span>
                     </div><br>
                     <div>
                         <span :id="'prev-'+index" v-for="(num,index) in previousNumbers" :class="index == (previousNumbers.length-1)? 'highlight-picked-num' : ''">
@@ -125,7 +163,7 @@
                             <v-card-title>How many tickets you need?</v-card-title><br>
                             <v-card-text>
                                 <v-slider v-model="slider"thumb-label="always"
-                                    min="1" max="20" class="cards-slider" hide-details
+                                    min="1" max="20" class="full-width" hide-details
                                 ></v-slider>
                             </v-card-text>
                             <v-card-actions>
@@ -213,6 +251,29 @@
                         </v-card>
                     </v-dialog>
                     <!-- END - Instructions Popup -->
+
+                    <!-- Room Popup -->
+                    <v-dialog persistent v-model="showRoompopup" width="500" height="500">
+                        <v-card class="pa-3">
+                            <v-card-title>{{isCreate ? 'Create Room' : 'Join Room'}}</v-card-title>
+                            <v-card-text>
+                                <v-text-field v-model="roomID" label="Room ID *" autofocus></v-text-field>
+                                <v-text-field v-model="admin" v-if="isCreate" label="Admin *"></v-text-field>
+                                <v-text-field v-model="player" v-else label="Player *"></v-text-field>
+                                <!-- Prizes list -->
+                                <v-combobox v-if="isCreate"
+                                    v-model="selectedPrizes" :items="prizeItems" label="Prizes"
+                                    :error-messages="prizeValidate" deletable-chips multiple chips
+                                ></v-combobox>
+                                <!-- END - Prizes list -->
+                            </v-card-text>
+                            <v-card-actions>
+                                <v-spacer></v-spacer>
+                                <v-btn text color="indigo" @click="isCreate ? createRoom() : joinRoom()" :disabled="!roomID || (isCreate ? (!admin || prizeValidate == 'Housie and Lines are Mandatory') : !player)">{{isCreate ? 'Create' : 'Join'}}</v-btn>
+                                <v-btn text color="indigo" @click="showRoompopup = false;">close</v-btn>
+                            </v-card-actions>
+                        </v-card>
+                    </v-dialog>
                 </center>
             </v-container>
             <v-container fluid>
@@ -220,14 +281,27 @@
                 <v-card class="pa-3 usedTickets-card" color="indigo lighten-4" v-if="usedTickets.length > 0" >
                     <span class="title">Selected Tickets({{usedTickets.length}})</span>
                     <div class="float-right">
-                        <v-icon title="Edit Tickets" v-if="!editTickets" @click="editTickets = !editTickets">create</v-icon><v-icon v-else @click="editTickets = !editTickets">clear</v-icon>
-                        <v-icon title="Add Ticket" @click="generateTicket(null)">add</v-icon>
-                        <v-icon title="Delete All Tickets" @click="deleteTickets('All', -1)">delete</v-icon>
-                        <v-icon title="Update All" @click="regenerateTickets('All',-1)">loop</v-icon>
+                        <template v-if="status == null || status == 'null'">
+                            <v-icon title="Edit Tickets" v-if="!editTickets" @click="editTickets = !editTickets">create</v-icon><v-icon v-else @click="editTickets = !editTickets">clear</v-icon>
+                            <v-icon title="Add Ticket" @click="generateTicket(null)">add</v-icon>
+                            <v-icon title="Delete All Tickets" @click="deleteTickets('All', -1)">delete</v-icon>
+                            <v-icon title="Update All" @click="regenerateTickets('All',-1)">loop</v-icon>
+                        </template>
                         <v-icon title="Show Tickets" @click="expanded = !expanded">{{!expanded ? 'keyboard_arrow_down' : 'keyboard_arrow_up'}}</v-icon>
                     </div>
                     <div v-show="expanded">
                         <v-row dense>
+                            <!-- Selected Prizes -->
+                            <v-col cols="6" class="pa-4">
+                                <v-card class="pa-4">
+                                    <v-row dense>
+                                        <v-col cols="6" v-for="prize in selectedPrizes">
+                                                <v-btn class="full-width" dark color="primary">{{prize}}</v-btn>
+                                        </v-col>
+                                    </v-row>
+                                </v-card>
+                            </v-col>
+                            <!-- Selected Prizes -->
                             <v-col cols="6" class="pa-4" v-for="(ticket,index) in usedTickets">
                                 <v-flex xs12>
                                     <v-card class="pa-3 usedTickets-inside-card">
@@ -275,6 +349,7 @@
             <p class="text-center">Created by - <span class="font-italic font-weight-black">ARJUN MAMIDI</span></p>
         </v-app>
     </div>
+    <script src="/socket.io/socket.io.js"></script>
     <script>
         var vm = new Vue({
             el: '#vue-main',
@@ -292,21 +367,116 @@
                 }
                 this.numbersArray = this.createNumbersArray(1, 90);
                 this.getValuesFromSessionStorage();
+                // connect to server
+                this.socket = io();
+                this.socket.on('connect', () => {
+                    console.log('connected');
+                });
+                this.socket.emit('checkToken', {token: sessionStorage.getItem('token'), status: sessionStorage.getItem('status')});
+                this.socket.on('token', (tokenObj) => {
+                    sessionStorage.setItem('token', tokenObj.token);
+                    this.status = tokenObj.status;
+                });
+                this.checkAndStartPollingForUsersInformation();
+                if(self.status != null && self.status.startsWith('Room Joined')){
+                    // start polling for getting numbers
+                    if(sessionStorage.getItem('numbersPollingStarted') == null || !sessionStorage.getItem('numbersPollingStarted')){
+                        const roomObjForNumbersPolling = {
+                            room_id: roomObj.room_id,
+                            token: sessionStorage.getItem('token'),
+                            previousNumbersLength: self.previousNumbers.length,
+                        }
+                        self.socket.emit('startPollingForGetNumbers', roomObjForNumbersPolling);
+                        sessionStorage.setItem('numbersPollingStarted', 'yes');
+                    }
+                }
             },
             mounted(){
+                console.log('mounted');
                 window.addEventListener('beforeunload', (event) => {
-                    // // Cancel the event as stated by the standard.
-                    // event.preventDefault();
-                    // // Chrome requires returnValue to be set.
-                    // event.returnValue = 'sure?';
+                    // Cancel the event as stated by the standard.
+                    event.preventDefault();
+                    // Chrome requires returnValue to be set.
+                    event.returnValue = 'sure?';
+                    // this.socket.emit('disconnectedToken', sessionStorage.getItem('token'));
                     this.persistData();
                 });
+                this.socket.on('showSnackbar', (snackbarObj) => {
+                    console.log('snackbar raise');
+                    this.showSnackbar = true;
+                    this.snackbarMessage = snackbarObj.message;
+                    this.snackbarType = snackbarObj.type;
+                });
+                this.socket.on('roomExitSuccess', (res) => {
+                    this.showSnackbar = true;
+                    this.snackbarType = res.type;
+                    this.snackbarMessage = res.message;
+                    if(this.status != null && this.status.startsWith('Room Created')){
+                        sessionStorage.setItem('ticketsPollingStarted', 'no');
+                    } else if(this.status != null && this.status.startsWith('Room Joined')){
+                        sessionStorage.setItem('numbersPollingStarted', 'no');
+                    }
+                    this.resetColors('noConfirmation');
+                    this.usedTickets = [];
+                    this.status = null;
+                });
+                // tickets polling for room created users
+                this.socket.on('updateUsedTicketsInUI', (res) => {
+                    if(this.status.startsWith('Room Created')){
+                        this.showSnackbar = true;
+                        this.snackbarType = res.type;
+                        this.snackbarMessage = res.message;
+                        this.usedTickets = res.usedTickets;
+                    }
+                });
+                this.socket.on('endTicketsPolling', (msg) => {
+                    sessionStorage.setItem('ticketsPollingStarted', 'no');
+                });
+                // numbers polling for room joined users
+                this.socket.on('updatePrevNumbersInUI', (res) => {
+                    if(this.status.startsWith('Room Joined')){
+                        this.previousNumbers = res.prevNumbers;
+                        console.log(res);
+                        this.addColors();
+                        this.speak(res.speechString, res.voice);
+                    }
+                });
+                this.socket.on('endNumbersPolling', () => {
+                    sessionStorage.setItem('numbersPollingStarted', 'no');
+                });
+            },
+            computed: {
+                snackbarColor() {
+                    const option = this.snackbarType;
+                    switch(option) {
+                        case 'error':
+                            return 'error';
+                            break;
+                        case 'info':
+                            return '#54a7ff';
+                            break;
+                        case 'dbFailed':
+                        case 'notFound':
+                            return 'orange';
+                            break;
+                        default:
+                            return 'success';
+                            break;
+                    }
+                },
+                prizeValidate(){
+                    if(this.selectedPrizes.includes('Housie') && this.selectedPrizes.includes('First Line') && this.selectedPrizes.includes('Second Line') && this.selectedPrizes.includes('Third Line')){
+                        return true;
+                    }
+                    return 'Housie and Lines are Mandatory';
+                }
             },
             data() {
                 return {
                     autoPick: true,
                     voiceEnable: true,
                     playGame: false,
+                    // goOnline: true,
                     number: 0,
                     boardNumberSequence: [],
                     numbersArray: [],
@@ -324,6 +494,18 @@
                     seconds: [4,5,6,7],
                     showInstructions: false,
                     showIntervalList: false,
+                    socket: null,
+                    showRoompopup: false,
+                    isCreate : false,
+                    roomID: '',
+                    admin: '',
+                    player: '',
+                    status: null, // roomCreated || roomJoined || null
+                    prizeItems: ['Housie', 'Fast Five', 'First Line', 'Second Line', 'Third Line', 'Temperature', 'Love Birds', 'Above', 'Below', 'Housie-2', 'Housie-3'],
+                    selectedPrizes: ['Housie', 'First Line', 'Second Line', 'Third Line'],
+                    showSnackbar: false,
+                    snackbarMessage: '',
+                    snackbarType: '',
                 }
             },
             watch: {
@@ -331,6 +513,11 @@
                     if(!this.autoPick){
                         this.startGame(false);
                     }
+                },
+                previousNumbers(){
+                    console.log(this.previousNumbers);
+                    this.checkAndStartPollingForUsersInformation();
+                    this.updatePickedNumbersOrSpeechStringInRoom('');
                 }
             },
             methods: {
@@ -354,6 +541,16 @@
                     if(JSON.parse(sessionStorage.getItem('usedTickets'))){
                         self.usedTickets = JSON.parse(sessionStorage.getItem('usedTickets'));
                     }
+                    if(sessionStorage.getItem('status')){
+                        self.status = sessionStorage.getItem('status');
+                    } else {
+                        self.status = null;
+                    }
+                    if((self.status != null || self.status != 'null') && sessionStorage.getItem('selectedPrizes')){
+                        self.selectedPrizes = JSON.parse(sessionStorage.getItem('selectedPrizes'));
+                    } else {
+                        self.selectedPrizes = ["Housie", "First Line", "Second Line", "Third Line"];
+                    }
                 },
                 // add colors to the already picked numbers
                 addColors(){
@@ -371,6 +568,8 @@
                     sessionStorage.setItem('previousNumbers', JSON.stringify(self.previousNumbers));
                     sessionStorage.setItem('numbersArray', JSON.stringify(self.numbersArray));
                     sessionStorage.setItem('usedTickets', JSON.stringify(self.usedTickets));
+                    sessionStorage.setItem('status', self.status);
+                    sessionStorage.setItem('selectedPrizes', JSON.stringify(self.selectedPrizes));
                 },
 
                 // creates intervals for picking numbers
@@ -383,6 +582,7 @@
                             msg = 'Continuing, Please check';
                         }
                         self.speak(msg, 'US English Female');
+                        self.updatePickedNumbersOrSpeechStringInRoom(msg);
                         self.interval = setInterval(() => {
                             if(self.numbersArray.length == 0){
                                 clearInterval(self.interval);
@@ -392,6 +592,8 @@
                         }, self.intervalTime);
                     } else{
                         self.speak('Game Paused!!!', 'US English Female');
+                        self.updatePickedNumbersOrSpeechStringInRoom('Game Paused!!!');
+                        self.checkAndStartPollingForUsersInformation();
                         clearInterval(self.interval);
                     } 
                 },
@@ -464,36 +666,37 @@
                     var self = this;
                     if(action == null){
                         self.showTicket = true;
-                    }
-                    self.ticket = [
-                        [-1,-1,-1,-1,-1,-1,-1,-1,-1],
-                        [-1,-1,-1,-1,-1,-1,-1,-1,-1],
-                        [-1,-1,-1,-1,-1,-1,-1,-1,-1]
-                    ];
-                    let indexMatrix = self.getIndexMatrix();
-                    for(let i = 0;i < 9;i++){
-                        let col = [],colIndexArray = [];
-                        let max = ((i + 1) * 10) - 1, min = i * 10;
-                        if(min == 0){ min = 1;};
-                        if(max == 89){max = 90;};
-                        let colArray = self.createNumbersArray(min,max);
-                        for(let j = 0;j < 3;j++){
-                            let indexArray = indexMatrix[j];
-                            if(indexArray.indexOf(i) > -1){
-                                let index = self.getRandomNumber(0, (colArray.length-1)); 
-                                col.push(colArray[index]);
-                                colArray.splice(index, 1);
-                                colIndexArray.push(j);
+                    } else{
+                        self.ticket = [
+                            [-1,-1,-1,-1,-1,-1,-1,-1,-1],
+                            [-1,-1,-1,-1,-1,-1,-1,-1,-1],
+                            [-1,-1,-1,-1,-1,-1,-1,-1,-1]
+                        ];
+                        let indexMatrix = self.getIndexMatrix();
+                        for(let i = 0;i < 9;i++){
+                            let col = [],colIndexArray = [];
+                            let max = ((i + 1) * 10) - 1, min = i * 10;
+                            if(min == 0){ min = 1;};
+                            if(max == 89){max = 90;};
+                            let colArray = self.createNumbersArray(min,max);
+                            for(let j = 0;j < 3;j++){
+                                let indexArray = indexMatrix[j];
+                                if(indexArray.indexOf(i) > -1){
+                                    let index = self.getRandomNumber(0, (colArray.length-1)); 
+                                    col.push(colArray[index]);
+                                    colArray.splice(index, 1);
+                                    colIndexArray.push(j);
+                                }
                             }
+                            col.sort();
+                            let colIndex = 0;
+                            colIndexArray.forEach( (index) => {
+                                if(index > -1){
+                                    self.ticket[index][i] = col[colIndex];
+                                    colIndex++;
+                                }
+                            });
                         }
-                        col.sort();
-                        let colIndex = 0;
-                        colIndexArray.forEach( (index) => {
-                            if(index > -1){
-                                self.ticket[index][i] = col[colIndex];
-                                colIndex++;
-                            }
-                        });
                     }
                 },
                 // returns indexes of the tickets
@@ -577,11 +780,14 @@
                 },
                 
                 // Reset all the picked numbers and removed colors
-                resetColors(){
+                resetColors(action){
                     var self = this;
-                    self.speak('Warning!! Taken numbers will get deleted', 'US English Male');
                     setTimeout(() => {
-                        const ask = confirm('Taken numbers will get deleted,sure?');
+                        const ask = true;
+                        if(action == !'noConfirmation'){
+                            self.speak('Warning!! Taken numbers will get deleted', 'US English Male');
+                            ask = confirm('Taken numbers will get deleted,sure?');
+                        }
                         if(ask){
                             const list = document.querySelectorAll('.cell');
                             list.forEach((element) => {
@@ -598,6 +804,148 @@
                     var self = this;
                     if(self.voiceEnable){
                         responsiveVoice.speak(msg, voice);
+                    }
+                },
+
+                // create room
+                createRoom(){
+                    const self = this;
+                    self.generateTicket('noPopup');
+                    const roomObj = {
+                        admin: self.admin,
+                        room_id: self.roomID,
+                        token: sessionStorage.getItem('token'),
+                        ticket: self.ticket,
+                        selectedPrizes: self.selectedPrizes,
+                    }
+                    self.socket.emit('createRoom', roomObj);
+                    self.socket.on('roomCreateSuccess', (res) => {
+                        self.showRoompopup = false;
+                        self.status = 'Room Created: '+ roomObj.room_id;
+                        sessionStorage.setItem('status', self.status);
+                        self.resetColors('noConfirmation');
+                        self.usedTickets = [];
+                        self.useTicket(self.admin);
+                        self.showSnackbar = true;
+                        self.snackbarType = res.type;
+                        self.snackbarMessage = res.message;
+                        self.selectedPrizes = res.selectedPrizes;
+                        sessionStorage.setItem('ticketsPollingStarted', 'no');
+                        self.checkAndStartPollingForUsersInformation();
+                    });
+                    self.socket.on('roomCreateError', (res) => {
+                        self.showSnackbar = true;
+                        self.snackbarType = res.type;
+                        self.snackbarMessage = res.message;
+                    });
+                },
+                // Join room
+                joinRoom(){
+                    const self = this;
+                    self.generateTicket('noPopup');
+                    const roomObj = {
+                        player: self.player,
+                        room_id: self.roomID,
+                        ticket: self.ticket,
+                        token: sessionStorage.getItem('token'),
+                    }
+                    self.socket.emit('joinRoom',roomObj);
+                    self.socket.on('roomJoinSuccess', (res) => {
+                        self.showRoompopup = false;
+                        self.status = 'Room Joined: '+ roomObj.room_id;
+                        sessionStorage.setItem('status', self.status);
+                        self.selectedPrizes = res.selectedPrizes;
+                        sessionStorage.setItem('selectedPrizes', JSON.stringify(res.selectedPrizes));
+                        self.resetColors('noConfirmation');
+                        self.usedTickets = [];
+                        self.useTicket(self.player);
+                        self.showSnackbar = true;
+                        self.snackbarType = res.type;
+                        self.snackbarMessage = res.message;
+                        // start polling for getting numbers
+                        const roomObjForNumbersPolling = {
+                            room_id: roomObj.room_id,
+                            token: sessionStorage.getItem('token'),
+                            previousNumbersLength: self.previousNumbers.length
+                        }
+                        self.socket.emit('startPollingForGetNumbers', roomObjForNumbersPolling);
+                        sessionStorage.setItem('numbersPollingStarted', 'yes');
+                    });
+                    self.socket.on('roomJoinError', (res) => {
+                        self.showSnackbar = true;
+                        self.snackbarType = res.type;
+                        self.snackbarMessage = res.message;
+                    });
+                },
+                // Exit room
+                exitRoom(){
+                    const self = this;
+                    const roomID = sessionStorage.getItem('status').split(': ')[1];
+                    const roomObj = {
+                        room_id: roomID,
+                        token: sessionStorage.getItem('token'),
+                    }
+                    self.socket.emit('exitRoom', roomObj);
+                    self.socket.on('roomExitError', (res) => {
+                        self.showSnackbar = true;
+                        self.snackbarType = res.type;
+                        self.snackbarMessage = res.message;
+                    });
+                },
+
+                // polling
+                checkAndStartPollingForUsersInformation(){
+                    var self = this;
+                    if(self.status != null && self.status.startsWith('Room Created')){
+                        let gameStatus = sessionStorage.getItem('gameStatus') != null ? sessionStorage.getItem('gameStatus') : 'Game Not yet Started';
+                        if(self.previousNumbers.length > 0 && self.previousNumbers.length <= 12){
+                            if(self.autoPick){
+                                if(self.playGame){
+                                    gameStatus = 'Game Running';
+                                } else {
+                                    gameStatus = 'Game Paused';
+                                }
+                            } else {
+                                gameStatus = 'Game Paused';
+                            }
+                        } else if(self.previousNumbers.length == 90){
+                            gameStatus = 'Game Completed';
+                        }
+                        // update game status
+                        const gameStatusObj = {
+                            token: sessionStorage.getItem('token'),
+                            status: gameStatus
+                        }
+                        if(sessionStorage.getItem('gameStatus') == null || (sessionStorage.getItem('gameStatus') && gameStatus != sessionStorage.getItem('gameStatus'))){
+                            sessionStorage.setItem('gameStatus',gameStatus);
+                            this.socket.emit('changeGameStatus', gameStatusObj);
+                        }
+                        // start polling to get tickets or joined user's information
+                        if(gameStatus != 'Game Running'){
+                            if(sessionStorage.getItem('ticketsPollingStarted') == null || sessionStorage.getItem('ticketsPollingStarted') == 'no'){
+                                const roomObjForPolling = {
+                                    room_id: self.status.split(': ')[1],
+                                    token: sessionStorage.getItem('token'),
+                                    usedTicketsLength: self.usedTickets.length
+                                }
+                                self.socket.emit('startPollingForGetTickets', roomObjForPolling);
+                            }
+                            sessionStorage.setItem('ticketsPollingStarted', 'yes');
+                        } else {
+                            sessionStorage.setItem('ticketsPollingStarted', 'no');
+                        }
+                    }
+                },
+
+                updatePickedNumbersOrSpeechStringInRoom(speechString){
+                    const self = this;
+                    if(self.status != null && self.status.startsWith('Room Created')){
+                        const roomObj = {
+                            token: sessionStorage.getItem('token'),
+                            prevNumbers: self.previousNumbers,
+                            speechString: speechString
+                        }
+                        self.socket.emit('updatePrevNumbersInRoom', roomObj);
                     }
                 }
             }

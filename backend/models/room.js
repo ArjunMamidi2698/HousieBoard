@@ -2,14 +2,8 @@ var mongoose = require('mongoose');
 
 var Room = mongoose.model('rooms', {
     token: String,
-    room_id: {
-        type: String,
-        trim: true,
-    },
-    admin: {
-        type: String,
-        trim: true,
-    },
+    room_id: String,
+    admin: String,
     users: Array,
     prevNumbers: Array,
     numbersArray: Array,

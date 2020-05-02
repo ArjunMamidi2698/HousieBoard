@@ -262,11 +262,6 @@ io.on('connection', (socket) => {
                         room.room_id = roomObj.room_id;
                         room.admin = roomObj.admin;
                         room.token = roomObj.token;
-                        if(roomObj.selectedPrizes.includes('Lines')){
-                            const linesIndex = roomObj.selectedPrizes.indexOf('Lines');
-                            roomObj.selectedPrizes.splice(linesIndex, 1);
-                            roomObj.selectedPrizes.push('Line 1', 'Line 2', 'Line 3');
-                        }
                         room.selectedPrizes = roomObj.selectedPrizes;
                         room.gameStatus = 'Game Not Yet Started';
                         const ticketObj = {
@@ -565,7 +560,7 @@ io.on('connection', (socket) => {
                 if(roomData){
                     console.log('room exists in database');
                     console.log('checking for game status of the room');
-                    if(roomData.gameStatus != 'Game Running'){
+                    if(roomData.gameStatus != 'Game Running' || roomData.gameStatus != 'Game Completed'){
                         console.log('game status of the room is: '+roomData.gameStatus);
                         console.log('checking for user joined or user left room');
                         if(roomData.usedTickets.length > prevUsersLength){
@@ -730,6 +725,13 @@ io.on('connection', (socket) => {
                                 }
                             }
                         } else {
+                            const pickedNumbersObj = {
+                                speechString: 'Last number is '+roomData.prevNumbers[roomData.prevNumbers.length-1]+' game completed',
+                                voice: 'US English Female',
+                                prevNumbers: roomData.prevNumbers
+                            }
+                            socket.emit('updatePrevNumbersInUI', pickedNumbersObj);
+                            console.log('updated last number');
                             console.log('Game Completed');
                             console.log('Polling Status: Ended -> '+roomObj.token);
                             clearInterval(numbersInterval);
