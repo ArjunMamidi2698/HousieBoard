@@ -28,11 +28,11 @@ db.on('open',function(){
 });
 
 
-app.use('/', (req, res, next)=> {
-    console.log(req.method);
-    console.log(req.path);
-    next();
-})
+// app.use('/', (req, res, next)=> {
+//     console.log(req.method);
+//     console.log(req.path);
+//     next();
+// })
 
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(cors());
