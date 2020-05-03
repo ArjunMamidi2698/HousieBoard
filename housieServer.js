@@ -14,8 +14,8 @@ var db = mongoose.connection;
 var dbconnected = false;
 //connection to Database using mongoose.connect(url)
 var dbConfig = require('./backend/database/mongoConnectURI');
-// mongoose.connect(dbConfig.uri, { useNewUrlParser: true, useUnifiedTopology: true });
-mongoose.connect('mongodb://localhost:27017/housie', { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.connect(dbConfig.uri, { useNewUrlParser: true, useUnifiedTopology: true });
+// mongoose.connect('mongodb://localhost:27017/housie', { useNewUrlParser: true, useUnifiedTopology: true });
 
 db.on('error', function(){
     dbconnected = false;
@@ -72,6 +72,7 @@ io.on('connection', (socket) => {
                     activeTokens.push(tokenObj);
                     console.log(activeTokens);
                 }
+                console.log('------------------checkToken logs ends------------------');
             } else {
                 if(tokenObj.status.startsWith('Room Created')){
                     // check room in database
@@ -87,6 +88,7 @@ io.on('connection', (socket) => {
                                 };
                                 socket.emit('showSnackbar', snackbarObject);
                                 console.log('database error');
+                                console.log('------------------checkToken logs ends------------------');
                                 throw err;
                             }
                             if(roomData){
@@ -97,6 +99,7 @@ io.on('connection', (socket) => {
                                     activeTokens.push(tokenObj);
                                 }
                                 console.log(activeTokens);
+                                console.log('------------------checkToken logs ends------------------');
                             } else {
                                 // not exists in database => so remove user status by raising error
                                 tokenObj.status = null;
@@ -115,6 +118,7 @@ io.on('connection', (socket) => {
                                 };
                                 socket.emit('roomExitSuccess', resObj);
                                 console.log('sent exit room request to UI');
+                                console.log('------------------checkToken logs ends------------------');
                             }
                         });
                     } else {
@@ -125,6 +129,7 @@ io.on('connection', (socket) => {
                             message: 'Something went wrong, please try again later'
                         };
                         socket.emit('showSnackbar', snackbarObject);
+                        console.log('------------------checkToken logs ends------------------');
                     }
                 } else if(tokenObj.status.startsWith('Room Joined')){
                     // check room and users
@@ -140,6 +145,7 @@ io.on('connection', (socket) => {
                                 };
                                 socket.emit('showSnackbar', snackbarObject);
                                 console.log('database error');
+                                console.log('------------------checkToken logs ends------------------');
                                 throw err;
                             }
                             if(roomData){
@@ -156,6 +162,7 @@ io.on('connection', (socket) => {
                                         activeTokens.push(tokenObj);
                                         console.log(activeTokens);
                                     }
+                                    console.log('------------------checkToken logs ends------------------');
                                 } else {
                                     // user deleted in database
                                     tokenObj.status = null;
@@ -174,6 +181,7 @@ io.on('connection', (socket) => {
                                     };
                                     socket.emit('roomExitSuccess', resObj);
                                     console.log('sent exit room request to UI');
+                                    console.log('------------------checkToken logs ends------------------');
                                 }
                             } else {
                                 // room not exists in database => so remove user status by raising error
@@ -193,6 +201,7 @@ io.on('connection', (socket) => {
                                 };
                                 socket.emit('roomExitSuccess', resObj);
                                 console.log('sent exit room request to UI');
+                                console.log('------------------checkToken logs ends------------------');
                             }
                         });
                     } else {
@@ -203,6 +212,7 @@ io.on('connection', (socket) => {
                             message: 'Something went wrong, please try again later'
                         };
                         socket.emit('showSnackbar', snackbarObject);
+                        console.log('------------------checkToken logs ends------------------');
                     }
                 }
             }
@@ -216,8 +226,8 @@ io.on('connection', (socket) => {
             socket.emit('token', tokenObj);
             activeTokens.push(tokenObj);
             console.log(activeTokens);
+            console.log('------------------checkToken logs ends------------------');
         }
-        console.log('------------------checkToken logs ends------------------');
     });
     socket.on('disconnect', (data) => {
         console.log('user disconnected', data);
@@ -235,6 +245,7 @@ io.on('connection', (socket) => {
             }
             socket.emit('showSnackbar', snackbarObject);
             console.log(roomObj.token+' not in active tokens, so requested UI to refresh');
+            console.log('------------- create room logs end ----------------------');
         } else {
             // add into database
             if(dbconnected){
@@ -247,6 +258,7 @@ io.on('connection', (socket) => {
                         };
                         socket.emit('roomCreateError', resObj);
                         console.log('database error');  
+                        console.log('------------- create room logs end ----------------------');
                         throw err;  
                     }
                     console.log('Checking with Room Availability: '+roomObj.room_id);
@@ -257,12 +269,21 @@ io.on('connection', (socket) => {
                         };
                         socket.emit('roomCreateError', resObj);
                         console.log('Room create error requested to UI -> Roomid or Username used already existed');
+                        console.log('------------- create room logs end ----------------------');
                     } else {
                         var room = new Room();
                         room.room_id = roomObj.room_id;
                         room.admin = roomObj.admin;
                         room.token = roomObj.token;
-                        room.selectedPrizes = roomObj.selectedPrizes;
+                        const selectedPrizesObjects = [];
+                        roomObj.selectedPrizes.forEach((prize) => {
+                            const prizeObj = {
+                                prize: prize,
+                                winners: []
+                            }
+                            selectedPrizesObjects.push(prizeObj);
+                        });
+                        room.selectedPrizes = selectedPrizesObjects;
                         room.gameStatus = 'Game Not Yet Started';
                         const ticketObj = {
                             ticket: roomObj.ticket,
@@ -279,7 +300,8 @@ io.on('connection', (socket) => {
                                     message: err
                                 };
                                 socket.emit('roomCreateError', resObj);
-                                console.log('Database error');  
+                                console.log('Database error'); 
+                                console.log('------------- create room logs end ----------------------'); 
                                 throw err;  
                             }
                             activeTokenObj.status = 'Room Created';
@@ -287,11 +309,12 @@ io.on('connection', (socket) => {
                             console.log(activeTokens);
                             const resObj = {
                                 type: 'success',
-                                selectedPrizes: roomObj.selectedPrizes,
-                                message: 'Room created successfully, ask your friends to join with this id'+roomObj.room_id
+                                selectedPrizes: selectedPrizesObjects,
+                                message: 'Room created successfully, ask your friends to join with this id: '+roomObj.room_id
                             };
                             socket.emit('roomCreateSuccess',resObj);
                             console.log('Sent roomCreate Success to UI');
+                            console.log('------------- create room logs end ----------------------');
                         });
                     }
                 });
@@ -302,9 +325,9 @@ io.on('connection', (socket) => {
                 };
                 socket.emit('roomCreateError', resObj);
                 console.log('Database connection not exists, roomCreate error requested to UI');
+                console.log('------------- create room logs end ----------------------');
             }
         }
-        console.log('------------- create room logs end ----------------------');
     });
     //join room
     socket.on('joinRoom', (roomObj) => {
@@ -318,6 +341,7 @@ io.on('connection', (socket) => {
             }
             socket.emit('showSnackbar', snackbarObject);
             console.log(roomObj.token+' not in active tokens, so requested UI to refresh');
+            console.log('------------- join room logs ends ----------------------');
         } else {
             console.log('Joining into Room...');
             if(dbconnected){
@@ -330,6 +354,7 @@ io.on('connection', (socket) => {
                         }
                         socket.emit('roomJoinError', resObj);
                         console.log('database error');
+                        console.log('------------- join room logs ends ----------------------');
                         throw err;
                     }
                     console.log('checking for room existence: '+roomObj.room_id);
@@ -342,6 +367,7 @@ io.on('connection', (socket) => {
                             }
                             socket.emit('roomJoinError', resObj);
                             console.log('Room join error requested to UI -> game already started in the room');
+                            console.log('------------- join room logs ends ----------------------');
                         } else {
                             console.log('checking for username availability: '+roomObj.player);
                             if(roomData.users.find((userObj) => userObj.user == roomObj.player)){
@@ -352,6 +378,7 @@ io.on('connection', (socket) => {
                                 }
                                 socket.emit('roomJoinError', resObj);
                                 console.log('Room join error requested to UI -> username already taken');
+                                console.log('------------- join room logs ends ----------------------');
                             } else {
                                 console.log('Adding user details to room');
                                 const userObj = {
@@ -379,6 +406,7 @@ io.on('connection', (socket) => {
                                         }
                                         socket.emit('roomJoinError', resObj);
                                         console.log('Database Error');
+                                        console.log('------------- join room logs ends ----------------------');
                                         throw err;  
                                     }  else {
                                         activeTokenObj.status = 'Room Joined';
@@ -391,6 +419,7 @@ io.on('connection', (socket) => {
                                         }
                                         socket.emit('roomJoinSuccess', resObj);
                                         console.log('Room Join Success requested to UI');
+                                        console.log('------------- join room logs ends ----------------------');
                                     } 
                                 });
                             }
@@ -402,6 +431,7 @@ io.on('connection', (socket) => {
                         }
                         socket.emit('roomJoinError', resObj);
                         console.log('Room Join error requested to UI -> can\'t find room');
+                        console.log('------------- join room logs ends ----------------------');
                     }
                 })
             } else {
@@ -411,9 +441,9 @@ io.on('connection', (socket) => {
                 }
                 socket.emit('roomJoinError', resObj);
                 console.log('Database connection not exists, roomJoin error requested to UI');
+                console.log('------------- join room logs ends ----------------------');
             }
         }
-        console.log('------------- join room logs ends ----------------------');
     });
 
     //exit room
@@ -430,6 +460,7 @@ io.on('connection', (socket) => {
             }
             socket.emit('showSnackbar', snackbarObject);
             console.log(roomObj.token+' not in active tokens, so requested UI to refresh');
+            console.log('------------- exit room logs ends ----------------------');
         } else{
             console.log('checking for user status either room created or room joined');
             if(activeTokenObj.status != null && (activeTokenObj.status).startsWith('Room Created')){
@@ -445,6 +476,7 @@ io.on('connection', (socket) => {
                             }
                             socket.emit('roomExitError', resObj);
                             console.log('Database Error');  
+                            console.log('------------- exit room logs ends ----------------------');
                             throw err;  
                         }
                         activeTokenObj.status = null;
@@ -456,6 +488,7 @@ io.on('connection', (socket) => {
                         }
                         socket.emit('roomExitSuccess', resObj);
                         console.log('Room exit success requested to UI');
+                        console.log('------------- exit room logs ends ----------------------');
                     });
                 } else {
                     const resObj = {
@@ -464,6 +497,7 @@ io.on('connection', (socket) => {
                     }
                     socket.emit('roomExitError', resObj);
                     console.log('Database connection not exists, roomExit error requested to UI');
+                    console.log('------------- exit room logs ends ----------------------');
                 }
             } else if(activeTokenObj.status != null && activeTokenObj.status.startsWith('Room Joined')){
                 console.log('User Status is Room Joined');
@@ -478,6 +512,7 @@ io.on('connection', (socket) => {
                             }
                             socket.emit('roomExitError', resObj);
                             console.log('Database Error');
+                            console.log('------------- exit room logs ends ----------------------');
                             throw err;
                         }
                         console.log('Checking for room existence in database');
@@ -502,6 +537,7 @@ io.on('connection', (socket) => {
                                     }
                                     socket.emit('roomExitError', resObj);
                                     console.log('Database Error');
+                                    console.log('------------- exit room logs ends ----------------------');
                                     throw err;  
                                 }  else {
                                     activeTokenObj.status = null;
@@ -513,6 +549,7 @@ io.on('connection', (socket) => {
                                     }
                                     socket.emit('roomExitSuccess', resObj);
                                     console.log('Room Exit Success requested to UI');
+                                    console.log('------------- exit room logs ends ----------------------');
                                 } 
                             });
                         } else {
@@ -523,6 +560,7 @@ io.on('connection', (socket) => {
                             }
                             socket.emit('roomExitSuccess', resObj);
                             console.log('Room exit success requested to UI -> Room deleted from Database');
+                            console.log('------------- exit room logs ends ----------------------');
                         }
                     });
                 } else{
@@ -532,10 +570,10 @@ io.on('connection', (socket) => {
                     }
                     socket.emit('roomExitError', resObj);
                     console.log('Database connection not exists, roomExit error requested to UI');
+                    console.log('------------- exit room logs ends ----------------------');
                 }
             }
         }
-        console.log('------------- exit room logs ends ----------------------');
     });
 
     // Polling for update tickets
@@ -554,6 +592,7 @@ io.on('connection', (socket) => {
                     }
                     socket.emit('showSnackbar', snackbarObject);
                     console.log('Database Error');
+                    console.log('------------- polling for getTickets logs end ----------------------');
                     throw err;
                 }
                 console.log('checking for room: '+roomObj.room_id+' existence');
@@ -590,6 +629,7 @@ io.on('connection', (socket) => {
                         socket.emit('endTicketsPolling', 'end tickets polling');
                         console.log('Requested end tickets polling to UI');
                         console.log('-------------------------- Tickets polling ends --------------------------');
+                        console.log('------------- polling for getTickets logs end ----------------------');
                     }
                 } else {
                     console.log('Room Not exists in database');
@@ -604,10 +644,10 @@ io.on('connection', (socket) => {
                     socket.emit('roomExitSuccess', resObj);
                     console.log('Requested roomexit succes to UI -> room not exist in database');
                     console.log('-------------------------- Ticket polling ends --------------------------');
+                    console.log('------------- polling for getTickets logs end ----------------------');
                 }
             });
         }, 4000);
-        console.log('------------- polling for getTickets logs end ----------------------');
     });
 
     // upate game status
@@ -625,6 +665,7 @@ io.on('connection', (socket) => {
                     }
                     socket.emit('showSnackbar', snackbarObject);
                     console.log('database error');
+                    console.log('------------- update game status logs end ----------------------');
                     throw err;
                 }
                 console.log('checking for room existence');
@@ -643,9 +684,11 @@ io.on('connection', (socket) => {
                             }
                             socket.emit('showSnackbar', snackbarObject);
                             console.log('Database error');
+                            console.log('------------- update game status logs end ----------------------');
                             throw err;  
                         }  else {
                             console.log('Gamestatus Updated in database -> '+gameStatusObj.status);
+                            console.log('------------- update game status logs end ----------------------');
                         } 
                     });
                 } else {
@@ -655,6 +698,7 @@ io.on('connection', (socket) => {
                     };
                     socket.emit('roomExitSuccess', resObj);
                     console.log('room exitsuccess requested to UI -> Room not found in database');
+                    console.log('------------- update game status logs end ----------------------');
                 }
             });
         } else {
@@ -664,8 +708,8 @@ io.on('connection', (socket) => {
             }
             socket.emit('showSnackbar', snackbarObject);
             console.log('Database connection not exists');
+            console.log('------------- update game status logs end ----------------------');
         }
-        console.log('------------- update game status logs end ----------------------');
     });
     // Polling for picked numbers
     socket.on('startPollingForGetNumbers', (roomObj) => {
@@ -683,6 +727,7 @@ io.on('connection', (socket) => {
                     }
                     socket.emit('showSnackbar', snackbarObject);
                     console.log('Database Error');
+                    console.log('------------- Polling for getting numbers end -------------');
                     throw err;
                 }
                 console.log('checking for room: '+roomObj.room_id+' existence');
@@ -700,7 +745,8 @@ io.on('connection', (socket) => {
                                 const pickedNumbersObj = {
                                     speechString: roomData.speechString,
                                     voice: 'US English Female',
-                                    prevNumbers: roomData.prevNumbers
+                                    prevNumbers: roomData.prevNumbers,
+                                    selectedPrizes: roomData.selectedPrizes
                                 }
                                 socket.emit('updatePrevNumbersInUI', pickedNumbersObj);
                             } else{
@@ -717,7 +763,8 @@ io.on('connection', (socket) => {
                                     const pickedNumbersObj = {
                                         speechString: speechString,
                                         voice: 'US English Female',
-                                        prevNumbers: roomData.prevNumbers
+                                        prevNumbers: roomData.prevNumbers,
+                                        selectedPrizes: roomData.selectedPrizes
                                     }
                                     pickedNumbersLength = roomData.prevNumbers.length;
                                     socket.emit('updatePrevNumbersInUI', pickedNumbersObj);
@@ -728,7 +775,8 @@ io.on('connection', (socket) => {
                             const pickedNumbersObj = {
                                 speechString: 'Last number is '+roomData.prevNumbers[roomData.prevNumbers.length-1]+' game completed',
                                 voice: 'US English Female',
-                                prevNumbers: roomData.prevNumbers
+                                prevNumbers: roomData.prevNumbers,
+                                selectedPrizes: roomData.selectedPrizes
                             }
                             socket.emit('updatePrevNumbersInUI', pickedNumbersObj);
                             console.log('updated last number');
@@ -738,6 +786,7 @@ io.on('connection', (socket) => {
                             socket.emit('endNumbersPolling');
                             console.log('Requested end numbers polling to UI');
                             console.log('-------------------------- Numbers polling ends --------------------------');
+                            console.log('------------- Polling for getting numbers end -------------');
                         }
                     } else {
                         console.log('User not belongs to room');
@@ -746,6 +795,7 @@ io.on('connection', (socket) => {
                         socket.emit('endNumbersPolling');
                         console.log('Requested end numbers polling to UI');
                         console.log('-------------------------- Numbers polling ends --------------------------');
+                        console.log('------------- Polling for getting numbers end -------------');
                     }
                 } else {
                     console.log('Room Not exists in database');
@@ -760,10 +810,10 @@ io.on('connection', (socket) => {
                     socket.emit('roomExitSuccess', resObj);
                     console.log('Requested roomexit succes to UI -> room not exist in database');
                     console.log('-------------------------- Number polling ends --------------------------');
+                    console.log('------------- Polling for getting numbers end -------------');
                 }
             });
         }, 4000);
-        console.log('------------- Polling for getting numbers end -------------');
     });
     // updatePrevNumbersInRoom
     socket.on('updatePrevNumbersInRoom', (roomObj) => {
@@ -779,9 +829,11 @@ io.on('connection', (socket) => {
                     }
                     socket.emit('showSnackbar', snackbarObject);
                     console.log('Database Error');
+                    console.log('------------- Update picked numbers logs end -------------');
                     throw err;
                 }
                 console.log('updated prev numbers successfully');
+                console.log('------------- Update picked numbers logs end -------------');
             });
         } else {
             const snackbarObject = {
@@ -790,9 +842,80 @@ io.on('connection', (socket) => {
             }
             socket.emit('showSnackbar', snackbarObject);
             console.log('Database connection not exists');
+            console.log('------------- Update picked numbers logs end -------------');
         }
-        console.log('------------- Update picked numbers logs end -------------');
     });
+
+    // raise Prize
+    // socket.on('raisePrize', (prizeObj) => {
+    //     console.log('------------- raise prize logs start -------------');
+    //     console.log('raise prize requested by '+prizeObj.token);
+    //     if(dbconnected){
+    //         console.log('Database Connection exists');
+    //         Room.findOne({room_id: prizeObj.room_id}, (err,roomData) => {
+    //             if(err){
+    //                 const snackbarObject = {
+    //                     type: 'dbFailed',
+    //                     message: err
+    //                 }
+    //                 socket.emit('showSnackbar', snackbarObject);
+    //                 console.log('Database Error');
+    //                 console.log('------------- raise prize logs end -------------');
+    //                 throw err;
+    //             }
+    //             console.log('Checking for room '+prizeObj.room_id+' existence....');
+    //             if(roomData){
+    //                 console.log('Room existed');
+    //                 console.log('checking user details...');
+    //                 let user = roomData.users.find( (userObj) => userObj.token == prizeObj.token);
+    //                 if(user){
+    //                     console.log('user existed');
+    //                     Room.updateOne({ room_id: prizeObj.room_id}, { $set: {
+    //                         gameStatus: 'Game Paused, someone('+prizeObj.token+') may won prize: '+prizeObj.prize,
+    //                         speechString: 'Game Paused, Someone may won '+prizeObj.prize,
+    //                     }}, (err, data) => {
+    //                         if(err){
+    //                             const snackbarObject = {
+    //                                 type: 'dbFailed',
+    //                                 message: err
+    //                             }
+    //                             socket.emit('showSnackbar', snackbarObject);
+    //                             console.log('Database Error');
+    //                             console.log('------------- raise prize logs end -------------');
+    //                             throw err;
+    //                         }
+    //                         console.log('Updated prizes');
+    //                     });
+    //                 } else{
+    //                     console.log('user deleted in database');
+    //                     const resObj = {
+    //                         type: 'notFound',
+    //                         message: 'user deleted from room!!'
+    //                     };
+    //                     socket.emit('roomExitSuccess', resObj);
+    //                     console.log('sent exit room request to UI');
+    //                     console.log('------------- raise prize logs end -------------');
+    //                 }
+    //             } else{
+    //                 const resObj = {
+    //                     type: 'notFound',
+    //                     message: 'Room was deleted by admin'
+    //                 };
+    //                 socket.emit('roomExitSuccess', resObj);
+    //                 console.log('sent exit room request to UI');
+    //                 console.log('------------- raise prize logs end -------------');
+    //             }
+    //         });
+    //     } else {
+    //         const snackbarObject = {
+    //             type: 'dbFailed',
+    //             message: 'something went wrong, please try again later'
+    //         }
+    //         socket.emit('showSnackbar', snackbarObject);
+    //         console.log('Database connection not exists')
+    //         console.log('------------- raise prize logs end -------------');;
+    //     }
+    // });
 });
 
 server.listen(2698, () => {

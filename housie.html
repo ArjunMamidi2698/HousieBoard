@@ -64,7 +64,7 @@
                 <v-icon dark v-if="snackbarColor == '#54a7ff'" class="pr-1">info_outline</v-icon>
                 <v-icon dark v-if="snackbarColor == 'success'" class="pr-1">done</v-icon>
                 <b v-text="snackbarMessage"></b>
-                <v-btn color="black" text @click="$emit('close')">Close</v-btn>
+                <v-btn color="black" text @click="showSnackbar = false">Close</v-btn>
             </v-snackbar>
             <v-container>
                 <center>
@@ -129,7 +129,7 @@
 
                         <!-- Not in Room options-->
                         <template v-if="status == 'null' || status == null">
-                            <v-btn color="primary" @click="showRoompopup = true;isCreate = true">Create Room</v-btn>
+                            <v-btn color="primary" @click="showRoompopup = true;isCreate = true;selectedPrizes = ['Housie', 'First Line', 'Second Line', 'Third Line']">Create Room</v-btn>
                             <v-btn color="primary" @click="showRoompopup = true;isCreate = false">Join Room</v-btn>
                         </template>
                         <!-- END - Not in Room options-->
@@ -263,13 +263,13 @@
                                 <!-- Prizes list -->
                                 <v-combobox v-if="isCreate"
                                     v-model="selectedPrizes" :items="prizeItems" label="Prizes"
-                                    :error-messages="prizeValidate" deletable-chips multiple chips
+                                    :rules="prizeValidate" deletable-chips multiple chips
                                 ></v-combobox>
                                 <!-- END - Prizes list -->
                             </v-card-text>
                             <v-card-actions>
                                 <v-spacer></v-spacer>
-                                <v-btn text color="indigo" @click="isCreate ? createRoom() : joinRoom()" :disabled="!roomID || (isCreate ? (!admin || prizeValidate == 'Housie and Lines are Mandatory') : !player)">{{isCreate ? 'Create' : 'Join'}}</v-btn>
+                                <v-btn text color="indigo" @click="isCreate ? createRoom() : joinRoom()" :disabled="!roomID || (isCreate ? (!admin || (!selectedPrizes || !selectedPrizes.includes('Housie') || !selectedPrizes.includes('First Line') || !selectedPrizes.includes('Second Line') || !selectedPrizes.includes('Third Line'))) : !player)">{{isCreate ? 'Create' : 'Join'}}</v-btn>
                                 <v-btn text color="indigo" @click="showRoompopup = false;">close</v-btn>
                             </v-card-actions>
                         </v-card>
@@ -292,15 +292,17 @@
                     <div v-show="expanded">
                         <v-row dense>
                             <!-- Selected Prizes -->
-                            <v-col cols="6" class="pa-4">
-                                <v-card class="pa-4">
-                                    <v-row dense>
-                                        <v-col cols="6" v-for="prize in selectedPrizes">
-                                                <v-btn class="full-width" dark color="primary">{{prize}}</v-btn>
-                                        </v-col>
-                                    </v-row>
-                                </v-card>
-                            </v-col>
+                            <template v-if="status != null && status.startsWith('Room Created') || status != null && status.startsWith('Room Joined')">
+                                <v-col cols="6" class="pa-4">
+                                    <v-card class="pa-4">
+                                        <v-row dense>
+                                            <v-col cols="6" v-for="prize in selectedPrizes">
+                                                <v-btn @click="raisePrize(prize)" class="full-width" dark color="primary">{{prize.prize}}</v-btn>
+                                            </v-col>
+                                        </v-row>
+                                    </v-card>
+                                </v-col>
+                            </template>
                             <!-- Selected Prizes -->
                             <v-col cols="6" class="pa-4" v-for="(ticket,index) in usedTickets">
                                 <v-flex xs12>
@@ -328,10 +330,12 @@
                                             <v-simple-table class="table-overflow">
                                                 <template>
                                                     <tr v-for="i in ticket.ticket">
-                                                        <td v-for="j in i">
-                                                            <span v-if="j!=-1">
-                                                                {{j}}
-                                                            </span>
+                                                        <td class="text-center" v-for="j in i">
+                                                            <v-btn text @click="status != null && (status.startsWith('Room Created') || status.startsWith('Room Created')) ? markOnTicket(j) : ''">
+                                                                <span class="pa-2" :id="'selected-ticket-number-'+j" v-if="j!=-1">
+                                                                    {{j}}
+                                                                </span>
+                                                            </v-btn>
                                                         </td>
                                                     </tr>
                                                 </template>
@@ -436,7 +440,7 @@
                 this.socket.on('updatePrevNumbersInUI', (res) => {
                     if(this.status.startsWith('Room Joined')){
                         this.previousNumbers = res.prevNumbers;
-                        console.log(res);
+                        this.selectedPrizes = res.selectedPrizes;
                         this.addColors();
                         this.speak(res.speechString, res.voice);
                     }
@@ -464,12 +468,6 @@
                             break;
                     }
                 },
-                prizeValidate(){
-                    if(this.selectedPrizes.includes('Housie') && this.selectedPrizes.includes('First Line') && this.selectedPrizes.includes('Second Line') && this.selectedPrizes.includes('Third Line')){
-                        return true;
-                    }
-                    return 'Housie and Lines are Mandatory';
-                }
             },
             data() {
                 return {
@@ -483,6 +481,7 @@
                     previousNumbers: [],
                     showTicket: false,
                     ticket: [],
+                    markedNumbersInTicket: [],
                     usedTickets: [],
                     expanded: false,
                     editTickets: false,
@@ -503,6 +502,9 @@
                     status: null, // roomCreated || roomJoined || null
                     prizeItems: ['Housie', 'Fast Five', 'First Line', 'Second Line', 'Third Line', 'Temperature', 'Love Birds', 'Above', 'Below', 'Housie-2', 'Housie-3'],
                     selectedPrizes: ['Housie', 'First Line', 'Second Line', 'Third Line'],
+                    prizeValidate: [
+                        v => v.includes('Housie') && v.includes('First Line') && v.includes('Second Line') && v.includes('Third Line') ? true: 'Housie and Lines are Mandatory'
+                    ],
                     showSnackbar: false,
                     snackbarMessage: '',
                     snackbarType: '',
@@ -947,6 +949,35 @@
                         }
                         self.socket.emit('updatePrevNumbersInRoom', roomObj);
                     }
+                },
+
+                //markOnTicket
+                markOnTicket(id){
+                    const self = this;
+                    const eleId = 'selected-ticket-number-'+id;
+                    const element = document.getElementById(eleId);
+                    const styleOfNumber = element.style.border;
+                    if(styleOfNumber){
+                        element.style.border = null;
+                        const index = self.markedNumbersInTicket.indexOf(id);
+                        self.markedNumbersInTicket.splice(index, 1);
+                    } else {
+                        element.style.border = '2px solid indigo';
+                        element.style.borderRadius = '20px';
+                        self.markedNumbersInTicket.push(id);
+                    }
+                },
+
+                // raise Prize
+                raisePrize(prize){
+                    // const self = this;
+                    // const prizeObject = {
+                    //     token: sessionStorage.getItem('token'),
+                    //     prize: prize,
+                    //     room_id: self.status.split(': ')[1],
+                    //     markedNumbersInTicket: self.markedNumbersInTicket
+                    // }
+                    // self.socket.emit('raisePrize', prizeObject);
                 }
             }
         })
