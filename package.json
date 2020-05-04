@@ -1,6 +1,9 @@
 {
   "name": "housieboard",
   "version": "1.0.0",
+  "engines": {
+    "node": "12.10.0"
+  },
   "description": "Indian BINGO, have fun.",
   "main": "housieServer.js",
   "scripts": {
