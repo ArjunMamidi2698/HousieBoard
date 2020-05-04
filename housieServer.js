@@ -27,19 +27,12 @@ db.on('open',function(){
     console.log("Database Connected");	
 });
 
-
-// app.use('/', (req, res, next)=> {
-//     console.log(req.method);
-//     console.log(req.path);
-//     next();
-// })
-
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(cors());
 
 app.use(express.static(__dirname + '/node_modules'));
 
-app.get('/', (req, res) => {
+app.get('*', (req, res) => {
     // res.send('tested Successfully');
     res.sendFile(__dirname+'/housie.html');
 })
