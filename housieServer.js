@@ -912,6 +912,7 @@ io.on('connection', (socket) => {
     // });
 });
 
-server.listen(2698, () => {
-    console.log("listening at 2698 port!!!!");
+const port = process.env.PORT || 2698;
+server.listen(port, () => {
+    console.log(`listening at ${port} port!!!!`);
 });
