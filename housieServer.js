@@ -30,6 +30,7 @@ db.on('open',function(){
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(cors());
 
+app.use(express.static(__dirname + '/housie.html'));
 app.use(express.static(__dirname + '/node_modules'));
 
 app.get('*', (req, res) => {
