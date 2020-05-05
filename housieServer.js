@@ -33,7 +33,7 @@ app.use(cors());
 app.use(express.static(__dirname + '/housie.html'));
 app.use(express.static(__dirname + '/node_modules'));
 
-app.get('*', (req, res) => {
+app.get('/', (req, res) => {
     // res.send('tested Successfully');
     res.sendFile(__dirname+'/housie.html');
 })
