@@ -1,12 +1,11 @@
 # HousieBoard
-a project which generates random numbers of housie board
 
-click on GENERATE NUMBER to pick a number
+Indian style Bingo
 
-click on GENERATE TICKET to get a housie ticket, write it down and play.
-  - click on REGENERATE TICKET to get another ticket
-  - click on use to save ticket with a name for that ticket -> used tickets are visible at bottom
+Use this github page for lite version => https://arjunmamidi2698.github.io/HousieBoard/housie.html
 
-click on RESET BOARD to restart the game or clear the board
+Use this url for full version (play online with friends and family across world) => https://houssie.herokuapp.com/
 
-Have Fun!
+Top right corner of the application has help icon which explains about game and how to use application.
+
+Have Fun!!
