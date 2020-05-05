@@ -121,11 +121,14 @@
                             <v-btn color="primary" @click="resetColors(null)">Reset Board</v-btn>
                             <!-- <v-btn color="primary" dark><v-switch class="ma-0 pa-0" v-model="goOnline" label="Go Online" dense hide-details></v-switch></v-btn> -->
                         </template>
+
                         <!-- Room Player options-->
                         <template v-if="status != null && status.startsWith('Room Joined')">
                             <v-btn color="primary" dark><v-switch class="ma-0 pa-0" v-model="voiceEnable" label="Enable Voice" dense hide-details></v-switch></v-btn>
                         </template>
                         <!-- END - Room Player options-->
+
+                        <v-btn color="primary" v-if="status != null && (status.startsWith('Room Created') || status.startsWith('Room Joined'))" @click="checkBoard = !checkBoard">{{checkBoard ? 'Hide Board' : 'Show Board'}}</v-btn>
 
                         <!-- Not in Room options-->
                         <template v-if="status == 'null' || status == null">
@@ -133,7 +136,6 @@
                             <v-btn color="primary" @click="showRoompopup = true;isCreate = false">Join Room</v-btn>
                         </template>
                         <!-- END - Not in Room options-->
-
                         <!-- Every User options-->
                         <v-btn color="primary" v-else @click="exitRoom()">exit room</v-btn>
                         <!-- END -  Every User options-->
@@ -146,7 +148,7 @@
                             {{num}}
                         </span>
                     </div>
-                    <v-simple-table>
+                    <v-simple-table v-show="checkBoard">
                         <template>
                             <tr v-for="i in boardNumberSequence">
                                 <td :id="j" class="cell pa-3 text-center" v-for="j in i">
@@ -293,10 +295,10 @@
                         <v-row dense>
                             <!-- Selected Prizes -->
                             <template v-if="status != null && status.startsWith('Room Created') || status != null && status.startsWith('Room Joined')">
-                                <v-col cols="6" class="pa-4">
+                                <v-col cols="12" class="pa-4">
                                     <v-card class="pa-4">
                                         <v-row dense>
-                                            <v-col cols="6" v-for="prize in selectedPrizes">
+                                            <v-col cols="4" :xs="6" :sm="4" :md="4" :lg="3" :xl="3" v-for="prize in selectedPrizes">
                                                 <v-btn @click="raisePrize(prize)" class="full-width" dark color="primary">{{prize.prize}}</v-btn>
                                             </v-col>
                                         </v-row>
@@ -304,7 +306,10 @@
                                 </v-col>
                             </template>
                             <!-- Selected Prizes -->
-                            <v-col cols="6" class="pa-4" v-for="(ticket,index) in usedTickets">
+                        </v-row>
+                        <v-row dense :align="'start'" :justify="'space-between'">
+                            <v-col :xl="6" :lg="6" :md="6" :sm="12" :xs="12"
+                                class="pa-4" v-for="(ticket,index) in usedTickets">
                                 <v-flex xs12>
                                     <v-card class="pa-3 usedTickets-inside-card">
                                         <!-- Ticket Options-->
@@ -331,7 +336,7 @@
                                                 <template>
                                                     <tr v-for="i in ticket.ticket">
                                                         <td class="text-center" v-for="j in i">
-                                                            <v-btn text @click="status != null && (status.startsWith('Room Created') || status.startsWith('Room Created')) ? markOnTicket(j) : ''">
+                                                            <v-btn icon @click="j!= -1 && status != null && (status.startsWith('Room Created') || status.startsWith('Room Joined')) ? markOnTicket(j) : ''">
                                                                 <span class="pa-2" :id="'selected-ticket-number-'+j" v-if="j!=-1">
                                                                     {{j}}
                                                                 </span>
@@ -421,6 +426,7 @@
                         sessionStorage.setItem('numbersPollingStarted', 'no');
                     }
                     this.resetColors('noConfirmation');
+                    this.checkBoard = true;
                     this.usedTickets = [];
                     this.status = null;
                 });
@@ -474,6 +480,7 @@
                     autoPick: true,
                     voiceEnable: true,
                     playGame: false,
+                    checkBoard: true,
                     // goOnline: true,
                     number: 0,
                     boardNumberSequence: [],
@@ -483,7 +490,7 @@
                     ticket: [],
                     markedNumbersInTicket: [],
                     usedTickets: [],
-                    expanded: false,
+                    expanded: true,
                     editTickets: false,
                     updatedTicketName: null,
                     slider: 1,
@@ -517,7 +524,6 @@
                     }
                 },
                 previousNumbers(){
-                    console.log(this.previousNumbers);
                     this.checkAndStartPollingForUsersInformation();
                     this.updatePickedNumbersOrSpeechStringInRoom('');
                 }
@@ -828,6 +834,7 @@
                         self.resetColors('noConfirmation');
                         self.usedTickets = [];
                         self.useTicket(self.admin);
+                        self.checkBoard = true;
                         self.showSnackbar = true;
                         self.snackbarType = res.type;
                         self.snackbarMessage = res.message;
@@ -861,6 +868,7 @@
                         self.resetColors('noConfirmation');
                         self.usedTickets = [];
                         self.useTicket(self.player);
+                        self.checkBoard = false;
                         self.showSnackbar = true;
                         self.snackbarType = res.type;
                         self.snackbarMessage = res.message;

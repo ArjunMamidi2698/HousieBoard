@@ -15,7 +15,7 @@ var dbconnected = false;
 //connection to Database using mongoose.connect(url)
 var dbConfig = require('./backend/database/mongoConnectURI');
 mongoose.connect(dbConfig.uri, { useNewUrlParser: true, useUnifiedTopology: true });
-// mongoose.connect('mongodb://localhost:27017/housie', { useNewUrlParser: true, useUnifiedTopology: true });
+//mongoose.connect('mongodb://localhost:27017/housie', { useNewUrlParser: true, useUnifiedTopology: true });
 
 db.on('error', function(){
     dbconnected = false;
@@ -39,12 +39,12 @@ app.get('*', (req, res) => {
 })
 
 function createRandomToken(){
-    let randomNumber = Math.floor(Math.random() * 99);
+    let randomNumber = Math.floor(Math.random() * 999);
     if(activeTokens.findIndex( (tokenObj) => tokenObj.token == ('token-'+randomNumber)) < 0){
         return 'token-'+randomNumber;
     } else{
         while(activeTokens.findIndex( (tokenObj) => tokenObj.token == ('token-'+randomNumber)) > -1){
-            randomNumber = Math.floor(Math.random() * 99);
+            randomNumber = Math.floor(Math.random() * 999);
         }
         return 'token-'+randomNumber;
     }
