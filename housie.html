@@ -68,86 +68,92 @@
             </v-snackbar>
             <v-container>
                 <center>
-                    <!-- Housie Board -->
                     <h1>Housie Board</h1>
                     <v-btn icon large class="instructions-icon" @click="showInstructions = true">
                         <v-icon large>help_outline</v-icon>
                     </v-btn>
                     <br>
-                    <div>
-                        <!-- Room Admin options -->
-                        <template v-if="status == 'null' || status == null || (status !=null && status.startsWith('Room Created'))">
-                            <v-btn color="primary" @click="autoPick ? (!playGame ? startGame(true) : startGame(false)) : pickANumber()">
-                                <v-icon color="white" v-if="autoPick" left>{{!playGame ? 'play_circle_outline' : 'pause_circle_outline'}}</v-icon>
-                                {{autoPick ? (!playGame ? 'Play Game' : 'Pause Game') : 'Pick a Number'}}
-                                <v-menu open-on-hover :close-on-content-click="false" origin="center center" transition="scale-transition">
-                                    <template v-slot:activator="{ on }">
-                                        <v-btn icon dark class="pa-0" color="primary" v-on="on">
-                                            <v-icon right color="white">more_vert</v-icon>
-                                        </v-btn>
-                                    </template>
-                                    <v-list class="pa-0">
-                                        <v-list-item @mouseout="showIntervalList = false">
-                                            <v-list-title>
-                                                    <v-switch v-model="autoPick" label="Auto Pick" color="success" class="ma-0 my-2" dense hide-details></v-switch>
-                                            </v-list-title>
-                                        </v-list-item>
-                                        <v-divider></v-divider>
-                                        <v-list-item @mouseout="showIntervalList = false">
-                                            <v-list-title>
-                                                    <v-switch v-model="voiceEnable" label="Enable Voice" color="success" class="ma-0 my-2" dense hide-details></v-switch>
-                                            </v-list-title>
-                                        </v-list-item>
-                                        <v-divider></v-divider>
-                                        <v-list-item v-if="autoPick" class="d-inline" @mouseover="showIntervalList = true">
-                                            <v-list-title class="font-weight-black d-inline-flex py-3">
-                                                Picking Interval 
-                                                <v-icon>{{showIntervalList ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}}</v-icon>
-                                            </v-list-title>
-                                            <v-list-item-group v-show="showIntervalList" v-model="intervalTimeIndex">
-                                                <v-list-item v-for="sec in seconds" color="darkgrey" @click="updatePickNumberTime(sec)">
-                                                    <v-list-item-title>{{sec}} seconds</v-list-item-title>
-                                                </v-list-item>
-                                            </v-list-item-group>
-                                        </v-list-item>
-                                    </v-list>
-                                </v-menu>
-                            </v-btn>
-                        </template>
-                        <!-- END - Room Admin options-->
+                    <!-- Buttons -->
+                    <template>
+                        <div>
+                            <!-- Room Admin options -->
+                            <template v-if="status == 'null' || status == null || (status !=null && status.startsWith('Room Created'))">
+                                <v-btn color="primary" @click="autoPick ? (!playGame ? startGame(true) : startGame(false)) : pickANumber()">
+                                    <v-icon color="white" v-if="autoPick" left>{{!playGame ? 'play_circle_outline' : 'pause_circle_outline'}}</v-icon>
+                                    {{autoPick ? (!playGame ? 'Play Game' : 'Pause Game') : 'Pick a Number'}}
+                                    <v-menu open-on-hover :close-on-content-click="false" origin="center center" transition="scale-transition">
+                                        <template v-slot:activator="{ on }">
+                                            <v-btn icon dark class="pa-0" color="primary" v-on="on">
+                                                <v-icon right color="white">more_vert</v-icon>
+                                            </v-btn>
+                                        </template>
+                                        <v-list class="pa-0">
+                                            <v-list-item @mouseout="showIntervalList = false">
+                                                <v-list-title>
+                                                        <v-switch v-model="autoPick" label="Auto Pick" color="success" class="ma-0 my-2" dense hide-details></v-switch>
+                                                </v-list-title>
+                                            </v-list-item>
+                                            <v-divider></v-divider>
+                                            <v-list-item @mouseout="showIntervalList = false">
+                                                <v-list-title>
+                                                        <v-switch v-model="voiceEnable" label="Enable Voice" color="success" class="ma-0 my-2" dense hide-details></v-switch>
+                                                </v-list-title>
+                                            </v-list-item>
+                                            <v-divider></v-divider>
+                                            <v-list-item v-if="autoPick" class="d-inline" @mouseover="showIntervalList = true">
+                                                <v-list-title class="font-weight-black d-inline-flex py-3">
+                                                    Picking Interval 
+                                                    <v-icon>{{showIntervalList ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}}</v-icon>
+                                                </v-list-title>
+                                                <v-list-item-group v-show="showIntervalList" v-model="intervalTimeIndex">
+                                                    <v-list-item v-for="sec in seconds" color="darkgrey" @click="updatePickNumberTime(sec)">
+                                                        <v-list-item-title>{{sec}} seconds</v-list-item-title>
+                                                    </v-list-item>
+                                                </v-list-item-group>
+                                            </v-list-item>
+                                        </v-list>
+                                    </v-menu>
+                                </v-btn>
+                            </template>
+                            <!-- END - Room Admin options-->
 
-                        <template v-if="status == 'null' || status == null">
-                            <v-btn color="primary" @click="generateTicket(null)">Generate Tickets</v-btn>
-                            <v-btn color="primary" @click="resetColors(null)">Reset Board</v-btn>
-                            <!-- <v-btn color="primary" dark><v-switch class="ma-0 pa-0" v-model="goOnline" label="Go Online" dense hide-details></v-switch></v-btn> -->
-                        </template>
+                            <template v-if="status == 'null' || status == null">
+                                <v-btn color="primary" @click="generateTicket(null)">Generate Tickets</v-btn>
+                                <v-btn color="primary" @click="resetColors(null)">Reset Board</v-btn>
+                                <!-- <v-btn color="primary" dark><v-switch class="ma-0 pa-0" v-model="goOnline" label="Go Online" dense hide-details></v-switch></v-btn> -->
+                            </template>
 
-                        <!-- Room Player options-->
-                        <template v-if="status != null && status.startsWith('Room Joined')">
-                            <v-btn color="primary" dark><v-switch class="ma-0 pa-0" v-model="voiceEnable" label="Enable Voice" dense hide-details></v-switch></v-btn>
-                        </template>
-                        <!-- END - Room Player options-->
+                            <!-- Room Player options-->
+                            <template v-if="status != null && status.startsWith('Room Joined')">
+                                <v-btn color="primary" dark><v-switch class="ma-0 pa-0" v-model="voiceEnable" label="Enable Voice" dense hide-details></v-switch></v-btn>
+                                <!-- <v-btn color="primary dark" @click="pauseGame()"><v-icon>pause_circle_outline</v-icon>Pause Game</v-btn> -->
+                            </template>
+                            <!-- END - Room Player options-->
 
-                        <v-btn color="primary" v-if="status != null && (status.startsWith('Room Created') || status.startsWith('Room Joined'))" @click="checkBoard = !checkBoard">{{checkBoard ? 'Hide Board' : 'Show Board'}}</v-btn>
+                            <v-btn color="primary" v-if="status != null && (status.startsWith('Room Created') || status.startsWith('Room Joined'))" @click="checkBoard = !checkBoard">{{checkBoard ? 'Hide Board' : 'Show Board'}}</v-btn>
 
-                        <!-- Not in Room options-->
-                        <template v-if="status == 'null' || status == null">
-                            <v-btn color="primary" @click="showRoompopup = true;isCreate = true;selectedPrizes = ['Housie', 'First Line', 'Second Line', 'Third Line']">Create Room</v-btn>
-                            <v-btn color="primary" @click="showRoompopup = true;isCreate = false">Join Room</v-btn>
-                        </template>
-                        <!-- END - Not in Room options-->
-                        <!-- Every User options-->
-                        <v-btn color="primary" v-else @click="exitRoom()">exit room</v-btn>
-                        <!-- END -  Every User options-->
-                    </div><br>
-                    <div>
-                        <span>{{status != 'null' ? status: null}}</span>
-                    </div><br>
-                    <div>
-                        <span :id="'prev-'+index" v-for="(num,index) in previousNumbers" :class="index == (previousNumbers.length-1)? 'highlight-picked-num' : ''">
-                            {{num}}
-                        </span>
-                    </div>
+                            <!-- Not in Room options-->
+                            <template v-if="status == 'null' || status == null">
+                                <v-btn color="primary" @click="showRoompopup = true;isCreate = true;selectedPrizes = ['Housie', 'First Line', 'Second Line', 'Third Line']">Create Room</v-btn>
+                                <v-btn color="primary" @click="showRoompopup = true;isCreate = false">Join Room</v-btn>
+                            </template>
+                            <!-- END - Not in Room options-->
+                            <!-- Every User options-->
+                            <v-btn color="primary" v-else @click="exitRoom()">exit room</v-btn>
+                            <!-- END -  Every User options-->
+                        </div><br>
+                        <div>
+                            <span>{{status != 'null' ? status: null}}</span>
+                        </div><br>
+                        <div>
+                            <span :id="'prev-'+index" v-for="(num,index) in previousNumbers" :class="index == (previousNumbers.length-1)? 'highlight-picked-num' : ''">
+                                {{num}}
+                            </span>
+                        </div>
+                    </template>
+                    <!-- END - Buttons-->
+
+                    <!-- Housie Board-->
                     <v-simple-table v-show="checkBoard">
                         <template>
                             <tr v-for="i in boardNumberSequence">
@@ -158,6 +164,48 @@
                         </template>
                     </v-simple-table><br>
                     <!-- END - Housie Board -->
+
+                    <!-- Room Joined or Created -> ticket and prizes-->
+                    <template v-if="status != null && (status.startsWith('Room Created') || status.startsWith('Room Joined'))">
+                        <div>
+                            <v-card class="pa-3">
+                                <span class="font-weight-black title align-self-end">Housie Ticket:</span>
+                                <!-- Ticket creation-->
+                                <v-flex xs12 overflow-hidden>
+                                    <v-simple-table class="table-overflow">
+                                        <template>
+                                            <tr v-for="i in usedTickets[0].ticket">
+                                                <td class="text-center" v-for="j in i">
+                                                    <v-btn icon @click="j!= -1 ? markOnTicket(j) : ''">
+                                                        <span class="pa-2" :id="'selected-ticket-number-'+j" v-if="j!=-1">
+                                                            {{j}}
+                                                        </span>
+                                                    </v-btn>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </v-simple-table>
+                                </v-flex>
+                                <!-- End - Ticket creation -->
+                            </v-card>
+                        </div>
+                        <div>
+                            <v-row dense>
+                                <!-- Selected Prizes -->
+                                <v-col cols="12">
+                                    <v-card class="pa-4">
+                                        <v-row dense>
+                                            <v-col cols="4" :xs="6" :sm="4" :md="4" :lg="3" :xl="3" v-for="prize in selectedPrizes">
+                                                <v-btn @click="raisePrize(prize)" class="full-width" dark color="primary">{{prize.prize}}</v-btn>
+                                            </v-col>
+                                        </v-row>
+                                    </v-card>
+                                </v-col>
+                                <!-- Selected Prizes -->
+                            </v-row>
+                        </div>
+                    </template>
+                    <!-- END - Room Joined or Created -> ticket and prizes-->
 
                     <!-- Generate Tickets Popup-->
                     <v-dialog v-model="showTicket" persistent width="500" height="500">
@@ -307,7 +355,7 @@
                     </v-dialog>
                 </center>
             </v-container>
-            <v-container fluid>
+            <v-container fluid v-if="status == null || status == 'null' || status.startsWith('Room Created')">
                 <!-- Selected Tickets Panel-->
                 <v-card class="pa-3 usedTickets-card" color="indigo lighten-4" v-if="usedTickets.length > 0" >
                     <span class="title">Selected Tickets({{usedTickets.length}})</span>
@@ -321,21 +369,6 @@
                         <v-icon title="Show Tickets" @click="expanded = !expanded">{{!expanded ? 'keyboard_arrow_down' : 'keyboard_arrow_up'}}</v-icon>
                     </div>
                     <div v-show="expanded">
-                        <v-row dense>
-                            <!-- Selected Prizes -->
-                            <template v-if="status != null && status.startsWith('Room Created') || status != null && status.startsWith('Room Joined')">
-                                <v-col cols="12" class="pa-4">
-                                    <v-card class="pa-4">
-                                        <v-row dense>
-                                            <v-col cols="4" :xs="6" :sm="4" :md="4" :lg="3" :xl="3" v-for="prize in selectedPrizes">
-                                                <v-btn @click="raisePrize(prize)" class="full-width" dark color="primary">{{prize.prize}}</v-btn>
-                                            </v-col>
-                                        </v-row>
-                                    </v-card>
-                                </v-col>
-                            </template>
-                            <!-- Selected Prizes -->
-                        </v-row>
                         <v-row dense :align="'start'" :justify="'space-between'">
                             <v-col :xl="6" :lg="6" :md="6" :sm="12" :xs="12"
                                 class="pa-4" v-for="(ticket,index) in usedTickets">
@@ -365,11 +398,9 @@
                                                 <template>
                                                     <tr v-for="i in ticket.ticket">
                                                         <td class="text-center" v-for="j in i">
-                                                            <v-btn icon @click="j!= -1 && status != null && (status.startsWith('Room Created') || status.startsWith('Room Joined')) ? markOnTicket(j) : ''">
-                                                                <span class="pa-2" :id="'selected-ticket-number-'+j" v-if="j!=-1">
-                                                                    {{j}}
-                                                                </span>
-                                                            </v-btn>
+                                                            <span class="pa-2" v-if="j!=-1">
+                                                                {{j}}
+                                                            </span>
                                                         </td>
                                                     </tr>
                                                 </template>
@@ -951,14 +982,7 @@
                             gameStatus = 'Game Completed';
                         }
                         // update game status
-                        const gameStatusObj = {
-                            token: sessionStorage.getItem('token'),
-                            status: gameStatus
-                        }
-                        if(sessionStorage.getItem('gameStatus') == null || (sessionStorage.getItem('gameStatus') && gameStatus != sessionStorage.getItem('gameStatus'))){
-                            sessionStorage.setItem('gameStatus',gameStatus);
-                            this.socket.emit('changeGameStatus', gameStatusObj);
-                        }
+                        self.updateGameStatus(gameStatus);
                         // start polling to get tickets or joined user's information
                         if(gameStatus != 'Game Running'){
                             if(sessionStorage.getItem('ticketsPollingStarted') == null || sessionStorage.getItem('ticketsPollingStarted') == 'no'){
@@ -975,7 +999,17 @@
                         }
                     }
                 },
-
+                updateGameStatus(gameStatus){
+                    const self = this;
+                    const gameStatusObj = {
+                        token: sessionStorage.getItem('token'),
+                        status: gameStatus
+                    }
+                    if(sessionStorage.getItem('gameStatus') == null || (sessionStorage.getItem('gameStatus') && gameStatus != sessionStorage.getItem('gameStatus'))){
+                        sessionStorage.setItem('gameStatus',gameStatus);
+                        self.socket.emit('changeGameStatus', gameStatusObj);
+                    }
+                },
                 updatePickedNumbersOrSpeechStringInRoom(speechString){
                     const self = this;
                     if(self.status != null && self.status.startsWith('Room Created')){
@@ -1004,7 +1038,11 @@
                         self.markedNumbersInTicket.push(id);
                     }
                 },
-
+                // pauseGame by joined user
+                pauseGame(){
+                    var self = this;
+                    
+                },
                 // raise Prize
                 raisePrize(prize){
                     // const self = this;
