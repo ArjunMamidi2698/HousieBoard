@@ -463,12 +463,11 @@
             mounted(){
                 console.log('mounted');
                 window.addEventListener('beforeunload', (event) => {
-                    // Cancel the event as stated by the standard.
-                    event.preventDefault();
-                    // Chrome requires returnValue to be set.
-                    event.returnValue = 'sure?';
-                    // this.socket.emit('disconnectedToken', sessionStorage.getItem('token'));
+                    this.socket.emit('disconnectToken', { token: sessionStorage.getItem('token'), status: sessionStorage.getItem('status')});
                     this.persistData();
+                });
+                window.addEventListener('load',(event) => {
+                    this.socket.emit('clientReloaded', sessionStorage.getItem('token'));
                 });
                 this.socket.on('showSnackbar', (snackbarObj) => {
                     console.log('snackbar raise');

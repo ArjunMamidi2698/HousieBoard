@@ -15,7 +15,8 @@ var dbconnected = false;
 //connection to Database using mongoose.connect(url)
 var dbConfig = require('./backend/database/mongoConnectURI');
 mongoose.connect(dbConfig.uri, { useNewUrlParser: true, useUnifiedTopology: true });
-//mongoose.connect('mongodb://localhost:27017/housie', { useNewUrlParser: true, useUnifiedTopology: true });
+// local mongodb
+// mongoose.connect('mongodb://localhost:27017/housie', { useNewUrlParser: true, useUnifiedTopology: true });
 
 db.on('error', function(){
     dbconnected = false;
@@ -49,7 +50,64 @@ function createRandomToken(){
         return 'token-'+randomNumber;
     }
 }
-
+var disconnectedTokens = [];
+function disconnectToken(token, room_id){
+    disconnectedTokens.push(token);
+    setTimeout(() => {
+        if(disconnectedTokens.indexOf(token) > -1){
+            // remove from active tokens
+            let activeTokenObjIndex = activeTokens.findIndex((tokenObj) => tokenObj.token == token);
+            let activeTokenObj = activeTokens[activeTokenObjIndex];
+            if(activeTokenObjIndex > -1){
+                if(activeTokenObj.status.startsWith('Room Created')){
+                    // delete room from database
+                    Room.deleteOne({ token: token }, function(err, data) {
+                        if (err) {
+                            console.log('Database Error');  
+                            throw err;  
+                        }
+                        activeTokenObj.status = null;
+                    });
+                } else if(activeTokenObj.status.startsWith('Room Joined')){
+                    // delete user from room in database
+                    Room.findOne({room_id: room_id}, (err, roomData) => {
+                        if(err){
+                            console.log('Database Error');
+                            throw err;
+                        }
+                        console.log('Checking for room existence in database');
+                        if(roomData){
+                            console.log('Room available, Deleting user data');
+                            let users = roomData.users;
+                            let userIndex = users.findIndex((user) => user.token == token);
+                            users.splice(userIndex, 1);
+                            let usedTickets = roomData.usedTickets;
+                            let usedTicketIndex = usedTickets.findIndex((usedTicketsObj) => usedTicketsObj.token === token);
+                            usedTickets.splice(usedTicketIndex, 1);
+                            Room.updateOne({ room_id:room_id}, {
+                                $set: {
+                                    users: users,
+                                    usedTickets: usedTickets
+                                }
+                            },function(err, data) {
+                                if (err){
+                                    console.log('Database Error');
+                                    throw err;  
+                                }  else {
+                                    activeTokenObj.status = null;
+                                } 
+                            });
+                        } else {
+                            activeTokenObj.status = null;
+                        }
+                    });
+                }
+                activeTokens.splice(activeTokenObjIndex, 1);
+            }
+            console.log(activeTokens);
+        }
+    }, 12000);
+}
 io.on('connection', (socket) => {
     console.log('------------------connection starts------------------');
     console.log('connected to client');
@@ -226,6 +284,21 @@ io.on('connection', (socket) => {
     socket.on('disconnect', (data) => {
         console.log('user disconnected', data);
         console.log('------------------disconnected------------------');
+    });
+    socket.on('disconnectToken', (tokenObj) => {
+        console.log('token disconnected/reloaded: '+tokenObj.token);
+        let room_id = null;
+        if(tokenObj.status != null && (tokenObj.status.startsWith('Room Created') || tokenObj.status.startsWith('Room Joined'))){
+            room_id = tokenObj.status.split(': ')[1];
+        }
+        disconnectToken(tokenObj.token, room_id);
+    });
+    socket.on('clientReloaded', (token) => {
+        console.log('client reloaded: '+token);
+        let disconnectedTokenIndex = disconnectedTokens.indexOf(token);
+        if(disconnectedTokenIndex > -1){
+            disconnectedTokens.splice(disconnectedTokenIndex, 1);
+        }
     });
     // create room
     socket.on('createRoom', (roomObj) => {
