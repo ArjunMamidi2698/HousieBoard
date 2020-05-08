@@ -11,6 +11,7 @@ var Room = mongoose.model('rooms', {
     selectedPrizes: Array, // => prize, winners
     gameStatus: String,
     speechString: String,
+    roomMessages: Array,
 });
 
 module.exports.Room=Room;

@@ -59,7 +59,7 @@ function disconnectToken(token, room_id){
             let activeTokenObjIndex = activeTokens.findIndex((tokenObj) => tokenObj.token == token);
             let activeTokenObj = activeTokens[activeTokenObjIndex];
             if(activeTokenObjIndex > -1){
-                if(activeTokenObj.status.startsWith('Room Created')){
+                if(activeTokenObj.status != null && activeTokenObj.status.startsWith('Room Created')){
                     // delete room from database
                     Room.deleteOne({ token: token }, function(err, data) {
                         if (err) {
@@ -68,7 +68,7 @@ function disconnectToken(token, room_id){
                         }
                         activeTokenObj.status = null;
                     });
-                } else if(activeTokenObj.status.startsWith('Room Joined')){
+                } else if(activeTokenObj.status != null && activeTokenObj.status.startsWith('Room Joined')){
                     // delete user from room in database
                     Room.findOne({room_id: room_id}, (err, roomData) => {
                         if(err){
@@ -351,6 +351,7 @@ io.on('connection', (socket) => {
                             selectedPrizesObjects.push(prizeObj);
                         });
                         room.selectedPrizes = selectedPrizesObjects;
+                        room.roomMessages = [];
                         room.gameStatus = 'Game Not Yet Started';
                         const ticketObj = {
                             ticket: roomObj.ticket,
@@ -428,9 +429,15 @@ io.on('connection', (socket) => {
                     if(roomData){
                         console.log('Room exists');
                         if(roomData.gameStatus == 'Game Running'){
+                            let resMessage = null;
+                            if(roomData.prevNumbers.length > 12){
+                                resMessage = 'Can\'t join, Game already started'
+                            } else{
+                                resMessage = 'Can\'t join, Game already started, please ask your admin to pause!'
+                            }
                             const resObj = {
                                 type: 'error',
-                                message: 'Can\'t join, Game already started, please ask your admin to pause!'
+                                message: resMessage
                             }
                             socket.emit('roomJoinError', resObj);
                             console.log('Room join error requested to UI -> game already started in the room');
@@ -482,6 +489,7 @@ io.on('connection', (socket) => {
                                         const resObj = {
                                             type: 'success',
                                             selectedPrizes: roomData.selectedPrizes,
+                                            roomMessages: roomData.roomMessages,
                                             message: 'Joined Room Successfully'
                                         }
                                         socket.emit('roomJoinSuccess', resObj);
@@ -649,6 +657,7 @@ io.on('connection', (socket) => {
         console.log('Polling for getting tickets requested by', roomObj.token);
         console.log('-------------------------- Tickets Polling started --------------------------');
         let prevUsersLength = roomObj.usedTicketsLength;
+        let prevRoomMessagesLength = roomObj.roomMessagesLength;
         let interval = setInterval(() => {
             console.log('Polling status: Running -> '+roomObj.token);
             Room.findOne({room_id:roomObj.room_id, token: roomObj.token}, (err, roomData) => {
@@ -666,9 +675,26 @@ io.on('connection', (socket) => {
                 if(roomData){
                     console.log('room exists in database');
                     console.log('checking for game status of the room');
-                    if(roomData.gameStatus != 'Game Running' || roomData.gameStatus != 'Game Completed'){
+                    if(roomData.gameStatus != 'Game Completed'){
                         console.log('game status of the room is: '+roomData.gameStatus);
+                        if(roomData.gameStatus != '' && roomData.gameStatus.startsWith('Someone')){
+                            console.log('Requested UI to pause game');
+                            socket.emit('pauseGameRequested', 'Pause Game Requested');
+                        }
+                        console.log('checking for messages in room');
+                        if(roomData.roomMessages.length > prevRoomMessagesLength){
+                            prevRoomMessagesLength = roomData.roomMessages.length;
+                            console.log('new messages found');
+                            const messageObj = {
+                                roomMessages: roomData.roomMessages
+                            }
+                            socket.emit('updateRoomMessages', messageObj);
+                        }
                         console.log('checking for user joined or user left room');
+                        console.log('**************');
+                        console.log(roomData.usedTickets);
+                        console.log(prevUsersLength);
+                        console.log('*****************');
                         if(roomData.usedTickets.length > prevUsersLength){
                             console.log('user joined the room');
                             prevUsersLength = roomData.usedTickets.length;
@@ -784,6 +810,7 @@ io.on('connection', (socket) => {
         console.log('Polling for getting numbers requested by: '+roomObj.token);
         console.log('-------------------------- Numbers polling starts --------------------------');
         let pickedNumbersLength = 0;
+        let prevRoomMessagesLength = roomObj.roomMessagesLength;
         var numbersInterval = setInterval(() => {
             console.log('Polling status: Running -> '+roomObj.token);
             Room.findOne({room_id:roomObj.room_id}, (err, roomData) => {
@@ -816,27 +843,35 @@ io.on('connection', (socket) => {
                                     selectedPrizes: roomData.selectedPrizes
                                 }
                                 socket.emit('updatePrevNumbersInUI', pickedNumbersObj);
-                            } else{
-                                console.log('checking for Picked numbers updated or not');
-                                if(roomData.prevNumbers.length > pickedNumbersLength){
-                                    console.log('picked a number');
-                                    const pickedNumber = roomData.prevNumbers[roomData.prevNumbers.length-1];
-                                    var speechString = '';
-                                    if(pickedNumber > 9){
-                                        speechString = pickedNumber.toString().substring(0,1)+' '+pickedNumber.toString().substring(1)+' . '+pickedNumber;
-                                    } else{
-                                        speechString = 'Single number'+pickedNumber;
-                                    }
-                                    const pickedNumbersObj = {
-                                        speechString: speechString,
-                                        voice: 'US English Female',
-                                        prevNumbers: roomData.prevNumbers,
-                                        selectedPrizes: roomData.selectedPrizes
-                                    }
-                                    pickedNumbersLength = roomData.prevNumbers.length;
-                                    socket.emit('updatePrevNumbersInUI', pickedNumbersObj);
-                                    console.log('Requested picked numbers information to UI');
+                            }
+                            console.log('checking for messages in room');
+                            if(roomData.roomMessages.length > prevRoomMessagesLength){
+                                prevRoomMessagesLength = roomData.roomMessages.length;
+                                console.log('new messages found');
+                                const messageObj = {
+                                    roomMessages: roomData.roomMessages
                                 }
+                                socket.emit('updateRoomMessages', messageObj);
+                            }
+                            console.log('checking for Picked numbers updated or not');
+                            if(roomData.prevNumbers.length > pickedNumbersLength){
+                                console.log('picked a number');
+                                const pickedNumber = roomData.prevNumbers[roomData.prevNumbers.length-1];
+                                var speechString = '';
+                                if(pickedNumber > 9){
+                                    speechString = pickedNumber.toString().substring(0,1)+' '+pickedNumber.toString().substring(1)+' . '+pickedNumber;
+                                } else{
+                                    speechString = 'Single number'+pickedNumber;
+                                }
+                                const pickedNumbersObj = {
+                                    speechString: speechString,
+                                    voice: 'US English Female',
+                                    prevNumbers: roomData.prevNumbers,
+                                    selectedPrizes: roomData.selectedPrizes
+                                }
+                                pickedNumbersLength = roomData.prevNumbers.length;
+                                socket.emit('updatePrevNumbersInUI', pickedNumbersObj);
+                                console.log('Requested picked numbers information to UI');
                             }
                         } else {
                             const pickedNumbersObj = {
@@ -983,6 +1018,31 @@ io.on('connection', (socket) => {
     //         console.log('------------- raise prize logs end -------------');;
     //     }
     // });
+
+    socket.on('addRoomMessages', (messageObj) => {
+        let activeTokenObj = activeTokens.find((atknObj) => atknObj.token == messageObj.token);
+        if(!activeTokenObj){
+            const snackbarObject = {
+                type: 'notFound',
+                message: 'Action can\'t be performed now, Please refresh your browser!!'
+            }
+            socket.emit('showSnackbar', snackbarObject);
+            console.log(roomObj.token+' not in active tokens, so requested UI to refresh');
+        } else{
+            Room.findOneAndUpdate({room_id: messageObj.room_id}, { $set: { roomMessages: messageObj.roomMessages }}, (err, data) => {
+                if(err){
+                    const snackbarObject = {
+                        type: 'dbFailed',
+                        message: err
+                    }
+                    socket.emit('showSnackbar', snackbarObject);
+                    console.log('Database Error');
+                    throw err;
+                }
+                console.log('updated messages');
+            });
+        }
+    });
 });
 
 const port = process.env.PORT || 2698;

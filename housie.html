@@ -46,8 +46,41 @@
             right: 10px;
             top: 10px;
         }
+        .message-icon{
+            position: absolute;
+            top: 14px;
+            right: 70px;
+        }
+        .messages-panel{
+            position: absolute;
+            top: 54px;
+            right: 70px;
+            height: 29.25rem;
+            width: 20rem;
+            z-index: 1;
+        }
+        .message-in-messages-panel{
+            width: 90%;
+        }
+        .message-field>.v-input__control>.v-input__slot {
+            min-height: 32px !important;
+        }
+        .my-messages{
+            position: relative;
+            left: 24px;
+        }
         .full-width{
             width: 100%;
+        }
+        .auto-overflow{
+            overflow: auto;
+        }
+        .scrollbar::-webkit-scrollbar {
+            width: 6px;
+            background-color: rgb(219, 217, 196);
+        } 
+        .scrollbar::-webkit-scrollbar-thumb {
+            background-color: rgb(155, 155, 155);
         }
     </style>
     <script src="https://code.responsivevoice.org/responsivevoice.js?key=ZoF2rQuV"></script>
@@ -69,6 +102,35 @@
             <v-container>
                 <center>
                     <h1>Housie Board</h1>
+                </center>
+                    <template v-if="status != null && (status.startsWith('Room Created') || status.startsWith('Room Joined'))">
+                        <v-badge color="primary" overlap class="message-icon" :content="messageCount" :value="messageCount" hide-details>
+                            <v-btn icon large @click="showMessagesPanel = !showMessagesPanel; messageCount = 0;"><v-icon large>message</v-icon></v-btn>
+                        </v-badge>
+                        <v-sheet v-show="showMessagesPanel" color="#075E54" class="messages-panel pt-2">
+                            <span class="font-weight-bold white--text pl-2 ml-2">Chat Box</span>
+                            <div class="pt-2">
+                                <v-sheet color="rgb(219, 217, 196)" class="py-1 pl-2 auto-overflow scrollbar" height="24rem">
+                                    <v-layout class="my-2" v-for="message in roomMessages" style="height: auto;">
+                                        <v-card class="pa-1 pl-3 message-in-messages-panel" 
+                                        :color="message.split('->=>')[0] == roomUser ? 'rgb(228, 255, 238)' : ''" 
+                                        :class="message.split('->=>')[0] == roomUser ? 'my-messages' : ''" 
+                                        >
+                                            <template v-if="message.split('->=>')[0] != roomUser">
+                                                <span class="purple--text">{{message.split('->=>')[0]}}</span><br>
+                                            </template>
+                                            <span>{{message.split('->=>')[1]}}</span>
+                                        </v-card>
+                                    </v-layout>
+                                </v-sheet>
+                                <div class="d-flex pt-1" style="background:rgb(219, 217, 196);">
+                                    <v-text-field placeholder="Message here" class="message-field pt-1 pl-1" v-model="newMessage" dense hide-details single-line solo rounded></v-text-field>
+                                    <v-btn fab x-small dark class="align-self-center ml-1" color="#128C7E" @click="addMessage()"><v-icon>send</v-icon></v-btn>    
+                                </div>
+                            </div>
+                        </v-sheet>
+                    </template>
+                <center>
                     <v-btn icon large class="instructions-icon" @click="showInstructions = true">
                         <v-icon large>help_outline</v-icon>
                     </v-btn>
@@ -447,15 +509,16 @@
                     this.status = tokenObj.status;
                 });
                 this.checkAndStartPollingForUsersInformation();
-                if(self.status != null && self.status.startsWith('Room Joined')){
+                if(this.status != null && this.status.startsWith('Room Joined')){
                     // start polling for getting numbers
-                    if(sessionStorage.getItem('numbersPollingStarted') == null || !sessionStorage.getItem('numbersPollingStarted')){
+                    if(sessionStorage.getItem('numbersPollingStarted') == null || sessionStorage.getItem('numbersPollingStarted') == 'no'){
                         const roomObjForNumbersPolling = {
                             room_id: roomObj.room_id,
                             token: sessionStorage.getItem('token'),
-                            previousNumbersLength: self.previousNumbers.length,
+                            previousNumbersLength: this.previousNumbers.length,
+                            roomMessagesLength: this.roomMessages.length
                         }
-                        self.socket.emit('startPollingForGetNumbers', roomObjForNumbersPolling);
+                        this.socket.emit('startPollingForGetNumbers', roomObjForNumbersPolling);
                         sessionStorage.setItem('numbersPollingStarted', 'yes');
                     }
                 }
@@ -463,8 +526,14 @@
             mounted(){
                 console.log('mounted');
                 window.addEventListener('beforeunload', (event) => {
-                    this.socket.emit('disconnectToken', { token: sessionStorage.getItem('token'), status: sessionStorage.getItem('status')});
+                    // Cancel the event as stated by the standard.
+                    event.preventDefault();
+                    // Chrome requires returnValue to be set.
+                    event.returnValue = 'sure?';
                     this.persistData();
+                });
+                window.addEventListener('unload',(event) => {
+                    this.socket.emit('disconnectToken', { token: sessionStorage.getItem('token'), status: sessionStorage.getItem('status')});
                 });
                 window.addEventListener('load',(event) => {
                     this.socket.emit('clientReloaded', sessionStorage.getItem('token'));
@@ -513,6 +582,14 @@
                 this.socket.on('endNumbersPolling', () => {
                     sessionStorage.setItem('numbersPollingStarted', 'no');
                 });
+                this.socket.on('pauseGameRequested', () => {
+                    clearInterval(this.interval);
+                    this.playGame = false;
+                });
+                this.socket.on('updateRoomMessages', (res) => {
+                    this.messageCount = (res.roomMessages.length) - (this.roomMessages.length);
+                    this.roomMessages = res.roomMessages;
+                });
             },
             computed: {
                 snackbarColor() {
@@ -557,6 +634,11 @@
                     intervalTimeIndex: 0,
                     intervalTime: 4000,
                     seconds: [4,5,6,7],
+                    showMessagesPanel: false,
+                    messageCount: 0,
+                    roomUser: '',
+                    newMessage: '',
+                    roomMessages: [],
                     showInstructions: false,
                     showIntervalList: false,
                     socket: null,
@@ -618,6 +700,12 @@
                     } else {
                         self.selectedPrizes = ["Housie", "First Line", "Second Line", "Third Line"];
                     }
+                    self.roomUser = sessionStorage.getItem('roomUser');
+                    if(JSON.parse(sessionStorage.getItem('roomMessages'))){
+                        self.roomMessages = JSON.parse(sessionStorage.getItem('roomMessages'));
+                    } else {
+                        self.roomMessages = [];
+                    }
                 },
                 // add colors to the already picked numbers
                 addColors(){
@@ -637,6 +725,7 @@
                     sessionStorage.setItem('usedTickets', JSON.stringify(self.usedTickets));
                     sessionStorage.setItem('status', self.status);
                     sessionStorage.setItem('selectedPrizes', JSON.stringify(self.selectedPrizes));
+                    sessionStorage.setItem('roomMessages', JSON.stringify(self.roomMessages));
                 },
 
                 // creates intervals for picking numbers
@@ -890,6 +979,9 @@
                         self.showRoompopup = false;
                         self.status = 'Room Created: '+ roomObj.room_id;
                         sessionStorage.setItem('status', self.status);
+                        self.roomUser = self.admin;
+                        sessionStorage.setItem('roomUser', self.admin);
+                        self.roomMessages = [];
                         self.resetColors('noConfirmation');
                         self.usedTickets = [];
                         self.useTicket(self.admin);
@@ -922,6 +1014,9 @@
                         self.showRoompopup = false;
                         self.status = 'Room Joined: '+ roomObj.room_id;
                         sessionStorage.setItem('status', self.status);
+                        self.roomUser = self.player;
+                        sessionStorage.setItem('roomUser', self.player);
+                        self.roomMessages = res.roomMessages;
                         self.selectedPrizes = res.selectedPrizes;
                         sessionStorage.setItem('selectedPrizes', JSON.stringify(res.selectedPrizes));
                         self.resetColors('noConfirmation');
@@ -935,7 +1030,8 @@
                         const roomObjForNumbersPolling = {
                             room_id: roomObj.room_id,
                             token: sessionStorage.getItem('token'),
-                            previousNumbersLength: self.previousNumbers.length
+                            previousNumbersLength: self.previousNumbers.length,
+                            roomMessagesLength: self.roomMessages.length
                         }
                         self.socket.emit('startPollingForGetNumbers', roomObjForNumbersPolling);
                         sessionStorage.setItem('numbersPollingStarted', 'yes');
@@ -967,7 +1063,7 @@
                     var self = this;
                     if(self.status != null && self.status.startsWith('Room Created')){
                         let gameStatus = sessionStorage.getItem('gameStatus') != null ? sessionStorage.getItem('gameStatus') : 'Game Not yet Started';
-                        if(self.previousNumbers.length > 0 && self.previousNumbers.length <= 12){
+                        if(self.previousNumbers.length > 0){
                             if(self.autoPick){
                                 if(self.playGame){
                                     gameStatus = 'Game Running';
@@ -988,7 +1084,8 @@
                                 const roomObjForPolling = {
                                     room_id: self.status.split(': ')[1],
                                     token: sessionStorage.getItem('token'),
-                                    usedTicketsLength: self.usedTickets.length
+                                    usedTicketsLength: self.usedTickets.length,
+                                    roomMessagesLength: self.roomMessages.length
                                 }
                                 self.socket.emit('startPollingForGetTickets', roomObjForPolling);
                             }
@@ -1052,6 +1149,26 @@
                     //     markedNumbersInTicket: self.markedNumbersInTicket
                     // }
                     // self.socket.emit('raisePrize', prizeObject);
+                },
+
+                addMessage(){
+                    const self = this;
+                    self.newMessage = self.newMessage.trim();
+                    if(self.newMessage.length > 0){
+                        let message = self.roomUser+'->=>'+self.newMessage;
+                        console.log(message);
+                        self.roomMessages.push(message);
+                        self.scrollToBottom('.scrollbar');
+                        self.newMessage = '';
+                        self.messageCount = 0;
+                        self.socket.emit('addRoomMessages', {token: sessionStorage.getItem('token'), roomMessages: self.roomMessages, room_id: sessionStorage.getItem('status').split(': ')[1]} );
+                    }
+                },
+                scrollToBottom(id){
+                    const ele = document.querySelector(id);
+                    setTimeout(() => {
+                        ele.scrollTop = ele.scrollHeight;    
+                    }, 150);
                 }
             }
         })
