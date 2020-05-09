@@ -667,6 +667,16 @@
                 previousNumbers(){
                     this.checkAndStartPollingForUsersInformation();
                     this.updatePickedNumbersOrSpeechStringInRoom('');
+                },
+                messageCount(){
+                    console.log(this.messageCount);
+                    if(this.showMessagesPanel){
+                        console.log(this.messageCount);
+                        this.scrollToBottom('.scrollbar');
+                        setTimeout(() => {
+                            this.messageCount = 0;
+                        }, 500);
+                    }
                 }
             },
             methods: {
@@ -1045,17 +1055,19 @@
                 // Exit room
                 exitRoom(){
                     const self = this;
-                    const roomID = sessionStorage.getItem('status').split(': ')[1];
-                    const roomObj = {
-                        room_id: roomID,
-                        token: sessionStorage.getItem('token'),
+                    if(confirm('Sure?')){
+                        const roomID = sessionStorage.getItem('status').split(': ')[1];
+                        const roomObj = {
+                            room_id: roomID,
+                            token: sessionStorage.getItem('token'),
+                        }
+                        self.socket.emit('exitRoom', roomObj);
+                        self.socket.on('roomExitError', (res) => {
+                            self.showSnackbar = true;
+                            self.snackbarType = res.type;
+                            self.snackbarMessage = res.message;
+                        });
                     }
-                    self.socket.emit('exitRoom', roomObj);
-                    self.socket.on('roomExitError', (res) => {
-                        self.showSnackbar = true;
-                        self.snackbarType = res.type;
-                        self.snackbarMessage = res.message;
-                    });
                 },
 
                 // polling
