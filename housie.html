@@ -84,6 +84,7 @@
         }
     </style>
     <script src="https://code.responsivevoice.org/responsivevoice.js?key=ZoF2rQuV"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.2/axios.min.js"></script>
 </head>
 <body>
     <div id="vue-main">
@@ -480,8 +481,8 @@
             <p class="text-center">Created by - <span class="font-italic font-weight-black">ARJUN MAMIDI</span></p>
         </v-app>
     </div>
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
+    <!-- <script src="/socket.io/socket.io.js"></script> -->
+    <script type="module">
         var vm = new Vue({
             el: '#vue-main',
             vuetify: new Vuetify(),
@@ -498,30 +499,31 @@
                 }
                 this.numbersArray = this.createNumbersArray(1, 90);
                 this.getValuesFromSessionStorage();
+                this.checkToken();
                 // connect to server
-                this.socket = io();
-                this.socket.on('connect', () => {
-                    console.log('connected');
-                });
-                this.socket.emit('checkToken', {token: sessionStorage.getItem('token'), status: sessionStorage.getItem('status')});
-                this.socket.on('token', (tokenObj) => {
-                    sessionStorage.setItem('token', tokenObj.token);
-                    this.status = tokenObj.status;
-                });
-                this.checkAndStartPollingForUsersInformation();
-                if(this.status != null && this.status.startsWith('Room Joined')){
-                    // start polling for getting numbers
-                    if(sessionStorage.getItem('numbersPollingStarted') == null || sessionStorage.getItem('numbersPollingStarted') == 'no'){
-                        const roomObjForNumbersPolling = {
-                            room_id: roomObj.room_id,
-                            token: sessionStorage.getItem('token'),
-                            previousNumbersLength: this.previousNumbers.length,
-                            roomMessagesLength: this.roomMessages.length
-                        }
-                        this.socket.emit('startPollingForGetNumbers', roomObjForNumbersPolling);
-                        sessionStorage.setItem('numbersPollingStarted', 'yes');
-                    }
-                }
+                // this.socket = io();
+                // this.socket.on('connect', () => {
+                //     console.log('connected');
+                // });
+                // this.socket.emit('checkToken', {token: sessionStorage.getItem('token'), status: sessionStorage.getItem('status')});
+                // this.socket.on('token', (tokenObj) => {
+                //     sessionStorage.setItem('token', tokenObj.token);
+                //     this.status = tokenObj.status;
+                // });
+                // this.checkAndStartPollingForUsersInformation();
+                // if(this.status != null && this.status.startsWith('Room Joined')){
+                //     // start polling for getting numbers
+                //     if(sessionStorage.getItem('numbersPollingStarted') == null || sessionStorage.getItem('numbersPollingStarted') == 'no'){
+                //         const roomObjForNumbersPolling = {
+                //             room_id: roomObj.room_id,
+                //             token: sessionStorage.getItem('token'),
+                //             previousNumbersLength: this.previousNumbers.length,
+                //             roomMessagesLength: this.roomMessages.length
+                //         }
+                //         this.socket.emit('startPollingForGetNumbers', roomObjForNumbersPolling);
+                //         sessionStorage.setItem('numbersPollingStarted', 'yes');
+                //     }
+                // }
             },
             mounted(){
                 console.log('mounted');
@@ -533,63 +535,63 @@
                     this.persistData();
                 });
                 window.addEventListener('unload',(event) => {
-                    this.socket.emit('disconnectToken', { token: sessionStorage.getItem('token'), status: sessionStorage.getItem('status')});
+                    this.clientDisconnected();
                 });
                 window.addEventListener('load',(event) => {
-                    this.socket.emit('clientReloaded', sessionStorage.getItem('token'));
+                    this.clientReloaded();
                 });
-                this.socket.on('showSnackbar', (snackbarObj) => {
-                    console.log('snackbar raise');
-                    this.showSnackbar = true;
-                    this.snackbarMessage = snackbarObj.message;
-                    this.snackbarType = snackbarObj.type;
-                });
-                this.socket.on('roomExitSuccess', (res) => {
-                    this.showSnackbar = true;
-                    this.snackbarType = res.type;
-                    this.snackbarMessage = res.message;
-                    if(this.status != null && this.status.startsWith('Room Created')){
-                        sessionStorage.setItem('ticketsPollingStarted', 'no');
-                    } else if(this.status != null && this.status.startsWith('Room Joined')){
-                        sessionStorage.setItem('numbersPollingStarted', 'no');
-                    }
-                    this.resetColors('noConfirmation');
-                    this.checkBoard = true;
-                    this.usedTickets = [];
-                    this.status = null;
-                });
-                // tickets polling for room created users
-                this.socket.on('updateUsedTicketsInUI', (res) => {
-                    if(this.status.startsWith('Room Created')){
-                        this.showSnackbar = true;
-                        this.snackbarType = res.type;
-                        this.snackbarMessage = res.message;
-                        this.usedTickets = res.usedTickets;
-                    }
-                });
-                this.socket.on('endTicketsPolling', (msg) => {
-                    sessionStorage.setItem('ticketsPollingStarted', 'no');
-                });
-                // numbers polling for room joined users
-                this.socket.on('updatePrevNumbersInUI', (res) => {
-                    if(this.status.startsWith('Room Joined')){
-                        this.previousNumbers = res.prevNumbers;
-                        this.selectedPrizes = res.selectedPrizes;
-                        this.addColors();
-                        this.speak(res.speechString, res.voice);
-                    }
-                });
-                this.socket.on('endNumbersPolling', () => {
-                    sessionStorage.setItem('numbersPollingStarted', 'no');
-                });
-                this.socket.on('pauseGameRequested', () => {
-                    clearInterval(this.interval);
-                    this.playGame = false;
-                });
-                this.socket.on('updateRoomMessages', (res) => {
-                    this.messageCount = (res.roomMessages.length) - (this.roomMessages.length);
-                    this.roomMessages = res.roomMessages;
-                });
+                // this.socket.on('showSnackbar', (snackbarObj) => {
+                //     console.log('snackbar raise');
+                //     this.showSnackbar = true;
+                //     this.snackbarMessage = snackbarObj.message;
+                //     this.snackbarType = snackbarObj.type;
+                // });
+                // this.socket.on('roomExitSuccess', (res) => {
+                //     this.showSnackbar = true;
+                //     this.snackbarType = res.type;
+                //     this.snackbarMessage = res.message;
+                //     if(this.status != null && this.status.startsWith('Room Created')){
+                //         sessionStorage.setItem('ticketsPollingStarted', 'no');
+                //     } else if(this.status != null && this.status.startsWith('Room Joined')){
+                //         sessionStorage.setItem('numbersPollingStarted', 'no');
+                //     }
+                //     this.resetColors('noConfirmation');
+                //     this.checkBoard = true;
+                //     this.usedTickets = [];
+                //     this.status = null;
+                // });
+                // // tickets polling for room created users
+                // this.socket.on('updateUsedTicketsInUI', (res) => {
+                //     if(this.status.startsWith('Room Created')){
+                //         this.showSnackbar = true;
+                //         this.snackbarType = res.type;
+                //         this.snackbarMessage = res.message;
+                //         this.usedTickets = res.usedTickets;
+                //     }
+                // });
+                // this.socket.on('endTicketsPolling', (msg) => {
+                //     sessionStorage.setItem('ticketsPollingStarted', 'no');
+                // });
+                // // numbers polling for room joined users
+                // this.socket.on('updatePrevNumbersInUI', (res) => {
+                //     if(this.status.startsWith('Room Joined')){
+                //         this.previousNumbers = res.prevNumbers;
+                //         this.selectedPrizes = res.selectedPrizes;
+                //         this.addColors();
+                //         this.speak(res.speechString, res.voice);
+                //     }
+                // });
+                // this.socket.on('endNumbersPolling', () => {
+                //     sessionStorage.setItem('numbersPollingStarted', 'no');
+                // });
+                // this.socket.on('pauseGameRequested', () => {
+                //     clearInterval(this.interval);
+                //     this.playGame = false;
+                // });
+                // this.socket.on('updateRoomMessages', (res) => {
+                //     this.messageCount = (res.roomMessages.length) - (this.roomMessages.length);
+                //     this.roomMessages = res.roomMessages;
+                // });
             },
             computed: {
                 snackbarColor() {
@@ -667,6 +669,16 @@
                 previousNumbers(){
                     this.checkAndStartPollingForUsersInformation();
                     this.updatePickedNumbersOrSpeechStringInRoom('');
+                },
+                messageCount(){
+                    console.log(this.messageCount);
+                    if(this.showMessagesPanel){
+                        console.log(this.messageCount);
+                        this.scrollToBottom('.scrollbar');
+                        setTimeout(() => {
+                            this.messageCount = 0;
+                        }, 500);
+                    }
                 }
             },
             methods: {
@@ -967,97 +979,121 @@
                 createRoom(){
                     const self = this;
                     self.generateTicket('noPopup');
-                    const roomObj = {
+                    axios.post('/createRoom', {
                         admin: self.admin,
                         room_id: self.roomID,
                         token: sessionStorage.getItem('token'),
                         ticket: self.ticket,
-                        selectedPrizes: self.selectedPrizes,
-                    }
-                    self.socket.emit('createRoom', roomObj);
-                    self.socket.on('roomCreateSuccess', (res) => {
-                        self.showRoompopup = false;
-                        self.status = 'Room Created: '+ roomObj.room_id;
-                        sessionStorage.setItem('status', self.status);
-                        self.roomUser = self.admin;
-                        sessionStorage.setItem('roomUser', self.admin);
-                        self.roomMessages = [];
-                        self.resetColors('noConfirmation');
-                        self.usedTickets = [];
-                        self.useTicket(self.admin);
-                        self.checkBoard = true;
+                        selectedPrizes: self.selectedPrizes
+                    }).then((res) => {
+                        if(res.data.snackbarType == 'success'){
+                            self.showRoompopup = false;
+                            self.status = 'Room Created: '+ self.roomID;
+                            sessionStorage.setItem('status', self.status);
+
+                            self.roomUser = self.admin;
+                            sessionStorage.setItem('roomUser', self.admin);
+
+                            self.roomMessages = [];
+                            self.resetColors('noConfirmation');
+                            self.usedTickets = [];
+                            self.useTicket(self.admin);
+                            self.checkBoard = true;
+                            self.selectedPrizes = res.data.selectedPrizes;
+                            // sessionStorage.setItem('ticketsPollingStarted', 'no');
+                            // self.checkAndStartPollingForUsersInformation();
+                        }
                         self.showSnackbar = true;
-                        self.snackbarType = res.type;
-                        self.snackbarMessage = res.message;
-                        self.selectedPrizes = res.selectedPrizes;
-                        sessionStorage.setItem('ticketsPollingStarted', 'no');
-                        self.checkAndStartPollingForUsersInformation();
-                    });
-                    self.socket.on('roomCreateError', (res) => {
-                        self.showSnackbar = true;
-                        self.snackbarType = res.type;
-                        self.snackbarMessage = res.message;
+                        self.snackbarType = res.data.snackbarType;
+                        self.snackbarMessage = res.data.snackbarMessage;
+                        console.log(res);
+                    }).catch((err) => {
+                        console.log(err);
                     });
                 },
                 // Join room
                 joinRoom(){
                     const self = this;
                     self.generateTicket('noPopup');
-                    const roomObj = {
+                    axios.post('/joinRoom', {
                         player: self.player,
                         room_id: self.roomID,
                         ticket: self.ticket,
-                        token: sessionStorage.getItem('token'),
-                    }
-                    self.socket.emit('joinRoom',roomObj);
-                    self.socket.on('roomJoinSuccess', (res) => {
-                        self.showRoompopup = false;
-                        self.status = 'Room Joined: '+ roomObj.room_id;
-                        sessionStorage.setItem('status', self.status);
-                        self.roomUser = self.player;
-                        sessionStorage.setItem('roomUser', self.player);
-                        self.roomMessages = res.roomMessages;
-                        self.selectedPrizes = res.selectedPrizes;
-                        sessionStorage.setItem('selectedPrizes', JSON.stringify(res.selectedPrizes));
-                        self.resetColors('noConfirmation');
-                        self.usedTickets = [];
-                        self.useTicket(self.player);
-                        self.checkBoard = false;
-                        self.showSnackbar = true;
-                        self.snackbarType = res.type;
-                        self.snackbarMessage = res.message;
-                        // start polling for getting numbers
-                        const roomObjForNumbersPolling = {
-                            room_id: roomObj.room_id,
-                            token: sessionStorage.getItem('token'),
-                            previousNumbersLength: self.previousNumbers.length,
-                            roomMessagesLength: self.roomMessages.length
+                        token: sessionStorage.getItem('token')
+                    }).then((res) => {
+                        if(res.data.snackbarType == 'success'){
+                            self.showRoompopup = false;
+                            self.status = 'Room Joined: '+ self.roomID;
+                            sessionStorage.setItem('status', self.status);
+
+                            self.roomUser = self.player;
+                            sessionStorage.setItem('roomUser', self.player);
+
+                            self.roomMessages = res.roomMessages;
+                            self.selectedPrizes = res.selectedPrizes;
+                            sessionStorage.setItem('selectedPrizes', JSON.stringify(res.selectedPrizes));
+
+                            self.resetColors('noConfirmation');
+                            self.usedTickets = [];
+                            self.useTicket(self.player);
+                            self.checkBoard = false;
+                            
+                            // // start polling for getting numbers
+                            // const roomObjForNumbersPolling = {
+                            //     room_id: self.roomID,
+                            //     token: sessionStorage.getItem('token'),
+                            //     previousNumbersLength: self.previousNumbers.length,
+                            //     roomMessagesLength: self.roomMessages.length
+                            // }
+                            // self.socket.emit('startPollingForGetNumbers', roomObjForNumbersPolling);
+                            // sessionStorage.setItem('numbersPollingStarted', 'yes');
                         }
-                        self.socket.emit('startPollingForGetNumbers', roomObjForNumbersPolling);
-                        sessionStorage.setItem('numbersPollingStarted', 'yes');
-                    });
-                    self.socket.on('roomJoinError', (res) => {
                         self.showSnackbar = true;
-                        self.snackbarType = res.type;
-                        self.snackbarMessage = res.message;
+                        self.snackbarMessage = res.data.snackbarMessage;
+                        self.snackbarType = res.data.snackbarType;
+                        console.log(res);
+                    }).catch((err) => {
+                        console.log(err);
                     });
                 },
                 // Exit room
                 exitRoom(){
                     const self = this;
-                    const roomID = sessionStorage.getItem('status').split(': ')[1];
-                    const roomObj = {
-                        room_id: roomID,
-                        token: sessionStorage.getItem('token'),
+                    if(confirm('Sure?')){
+                        const roomID = sessionStorage.getItem('status').split(': ')[1];
+                        axios.post('/exitRoom', {
+                            room_id: roomID,
+                            token: sessionStorage.getItem('token'),
+                        }).then((res) => {
+                            if(res.data.showSnackbar = 'success'){
+                                self.exitRoomSuccess();
+                            }
+                            self.showSnackbar = true;
+                            self.snackbarMessage = res.data.snackbarMessage;
+                            self.snackbarType = res.data.snackbarType;
+                            console.log(res);
+                        }).catch((err) => {
+                            console.log(err);
+                        });
+                        self.socket.on('roomExitError', (res) => {
+                            self.showSnackbar = true;
+                            self.snackbarType = res.type;
+                            self.snackbarMessage = res.message;
+                        });
                     }
-                    self.socket.emit('exitRoom', roomObj);
-                    self.socket.on('roomExitError', (res) => {
-                        self.showSnackbar = true;
-                        self.snackbarType = res.type;
-                        self.snackbarMessage = res.message;
-                    });
                 },
-
+                exitRoomSuccess(){
+                    const self = this;
+                    if(self.status != null && self.status.startsWith('Room Created')){
+                        sessionStorage.setItem('ticketsPollingStarted', 'no');
+                    } else if(self.status != null && self.status.startsWith('Room Joined')){
+                        sessionStorage.setItem('numbersPollingStarted', 'no');
+                    }
+                    self.resetColors('noConfirmation');
+                    self.checkBoard = true;
+                    self.usedTickets = [];
+                    self.status = null;
+                },
                 // polling
                 checkAndStartPollingForUsersInformation(){
                     var self = this;
@@ -1126,12 +1162,12 @@
                     const styleOfNumber = element.style.border;
                     if(styleOfNumber){
                         element.style.border = null;
-                        const index = self.markedNumbersInTicket.indexOf(id);
-                        self.markedNumbersInTicket.splice(index, 1);
+                        // const index = self.markedNumbersInTicket.indexOf(id);
+                        // self.markedNumbersInTicket.splice(index, 1);
                     } else {
                         element.style.border = '2px solid indigo';
                         element.style.borderRadius = '20px';
-                        self.markedNumbersInTicket.push(id);
+                        // self.markedNumbersInTicket.push(id);
                     }
                 },
                 // pauseGame by joined user
@@ -1146,7 +1182,6 @@
                     //     token: sessionStorage.getItem('token'),
                     //     prize: prize,
                     //     room_id: self.status.split(': ')[1],
-                    //     markedNumbersInTicket: self.markedNumbersInTicket
                     // }
                     // self.socket.emit('raisePrize', prizeObject);
                 },
@@ -1169,6 +1204,62 @@
                     setTimeout(() => {
                         ele.scrollTop = ele.scrollHeight;    
                     }, 150);
+                },
+
+
+                // common routes
+                checkToken(){
+                    const self = this;
+                    axios.post('/checkToken', {
+                        token: sessionStorage.getItem('token'), 
+                        status: sessionStorage.getItem('status')
+                    }).then((res) => {
+                        if(res.data.showSnackbar){
+                            self.exitRoomSuccess();
+                            self.showSnackbar = true;
+                            self.snackbarMessage = res.data.snackbarMessage;
+                            self.snackbarType = res.data.snackbarType;
+                        } else {
+                            sessionStorage.setItem('token', res.data.token);
+                            sessionStorage.setItem('status', res.data.status);
+                        }
+                    }).catch((err) => {
+                        console.log(err);
+                    });
+                },
+                clientDisconnected(){
+                    const self = this;
+                    axios.post('/clientDisconnected', {
+                        token: sessionStorage.getItem('token'),
+                        status: sessionStorage.getItem('status')
+                    }).then((res) => {
+                        console.log(res);
+                    }). catch((err) => {
+                        console.log(err);
+                    });
+                },
+                clientReloaded(){
+                    const self = this;
+                    axios.post('/clientReloaded', {
+                        token: sessionStorage.getItem('token'),
+                        status: sessionStorage.getItem('status')
+                    }).then((res) => {
+                        console.log(res);
+                    }). catch((err) => {
+                        console.log(err);
+                    });
+                },
+                // function to update data of Room so that every user in room will get updated
+                updateDataInRoom(){
+                    const self = this;
+                    axios.post('/updateRoomData',{
+                      token: sessionStorage.getItem('token'),
+                      status: sessionStorage.getItem('status'),  
+                    }).then((res) => {
+                        console.log(res);
+                    }).catch((err) => {
+                        console.log(err);
+                    })
                 }
             }
         })
