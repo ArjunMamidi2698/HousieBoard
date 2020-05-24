@@ -481,7 +481,6 @@
             <p class="text-center">Created by - <span class="font-italic font-weight-black">ARJUN MAMIDI</span></p>
         </v-app>
     </div>
-    <!-- <script src="/socket.io/socket.io.js"></script> -->
     <script type="module">
         var vm = new Vue({
             el: '#vue-main',
@@ -500,30 +499,8 @@
                 this.numbersArray = this.createNumbersArray(1, 90);
                 this.getValuesFromSessionStorage();
                 this.checkToken();
-                // connect to server
-                // this.socket = io();
-                // this.socket.on('connect', () => {
-                //     console.log('connected');
-                // });
-                // this.socket.emit('checkToken', {token: sessionStorage.getItem('token'), status: sessionStorage.getItem('status')});
-                // this.socket.on('token', (tokenObj) => {
-                //     sessionStorage.setItem('token', tokenObj.token);
-                //     this.status = tokenObj.status;
-                // });
-                // this.checkAndStartPollingForUsersInformation();
-                // if(this.status != null && this.status.startsWith('Room Joined')){
-                //     // start polling for getting numbers
-                //     if(sessionStorage.getItem('numbersPollingStarted') == null || sessionStorage.getItem('numbersPollingStarted') == 'no'){
-                //         const roomObjForNumbersPolling = {
-                //             room_id: roomObj.room_id,
-                //             token: sessionStorage.getItem('token'),
-                //             previousNumbersLength: this.previousNumbers.length,
-                //             roomMessagesLength: this.roomMessages.length
-                //         }
-                //         this.socket.emit('startPollingForGetNumbers', roomObjForNumbersPolling);
-                //         sessionStorage.setItem('numbersPollingStarted', 'yes');
-                //     }
-                // }
+                this.checkAndStartPollingForRoomAdmin();
+                this.checkAndStartPollingForRoomPlayer();
             },
             mounted(){
                 console.log('mounted');
@@ -540,54 +517,6 @@
                 window.addEventListener('load',(event) => {
                     this.clientReloaded();
                 });
-                // this.socket.on('showSnackbar', (snackbarObj) => {
-                //     console.log('snackbar raise');
-                //     this.showSnackbar = true;
-                //     this.snackbarMessage = snackbarObj.message;
-                //     this.snackbarType = snackbarObj.type;
-                // });
-                // this.socket.on('roomExitSuccess', (res) => {
-                //     this.showSnackbar = true;
-                //     this.snackbarType = res.type;
-                //     this.snackbarMessage = res.message;
-                //     if(this.status != null && this.status.startsWith('Room Created')){
-                //         sessionStorage.setItem('ticketsPollingStarted', 'no');
-                //     } else if(this.status != null && this.status.startsWith('Room Joined')){
-                //         sessionStorage.setItem('numbersPollingStarted', 'no');
-                //     }
-                //     this.resetColors('noConfirmation');
-                //     this.checkBoard = true;
-                //     this.usedTickets = [];
-                //     this.status = null;
-                // });
-                // // tickets polling for room created users
-                // this.socket.on('updateUsedTicketsInUI', (res) => {
-                //     if(this.status.startsWith('Room Created')){
-                //         this.showSnackbar = true;
-                //         this.snackbarType = res.type;
-                //         this.snackbarMessage = res.message;
-                //         this.usedTickets = res.usedTickets;
-                //     }
-                // });
-                // this.socket.on('endTicketsPolling', (msg) => {
-                //     sessionStorage.setItem('ticketsPollingStarted', 'no');
-                // });
-                // // numbers polling for room joined users
-                // this.socket.on('updatePrevNumbersInUI', (res) => {
-                //     if(this.status.startsWith('Room Joined')){
-                //         this.previousNumbers = res.prevNumbers;
-                //         this.selectedPrizes = res.selectedPrizes;
-                //         this.addColors();
-                //         this.speak(res.speechString, res.voice);
-                //     }
-                // });
-                // this.socket.on('endNumbersPolling', () => {
-                //     sessionStorage.setItem('numbersPollingStarted', 'no');
-                // });
-                // this.socket.on('pauseGameRequested', () => {
-                //     clearInterval(this.interval);
-                //     this.playGame = false;
-                // });
                 // this.socket.on('updateRoomMessages', (res) => {
                 //     this.messageCount = (res.roomMessages.length) - (this.roomMessages.length);
                 //     this.roomMessages = res.roomMessages;
@@ -658,6 +587,9 @@
                     showSnackbar: false,
                     snackbarMessage: '',
                     snackbarType: '',
+                    roomAdminPolling: null,
+                    roomPlayerPolling: null,
+                    gameStatus: null,
                 }
             },
             watch: {
@@ -667,8 +599,10 @@
                     }
                 },
                 previousNumbers(){
-                    this.checkAndStartPollingForUsersInformation();
-                    this.updatePickedNumbersOrSpeechStringInRoom('');
+                    this.checkAndStartPollingForRoomAdmin();
+                    // this.checkAndStartPollingForUsersInformation();
+                    this.updateDataInRoom('', sessionStorage.getItem('gameStatus'));
+                    // this.updatePickedNumbersOrSpeechStringInRoom('');
                 },
                 messageCount(){
                     console.log(this.messageCount);
@@ -742,7 +676,7 @@
 
                 // creates intervals for picking numbers
                 startGame(action){
-                    var self = this;
+                    const self = this;
                     self.playGame = action;
                     if(action){
                         let msg = 'Starting Game, Get Ready Mates!!';
@@ -750,7 +684,8 @@
                             msg = 'Continuing, Please check';
                         }
                         self.speak(msg, 'US English Female');
-                        self.updatePickedNumbersOrSpeechStringInRoom(msg);
+                        self.updateDataInRoom(msg, sessionStorage.getItem('gameStatus'));
+                        // self.updatePickedNumbersOrSpeechStringInRoom(msg);
                         self.interval = setInterval(() => {
                             if(self.numbersArray.length == 0){
                                 clearInterval(self.interval);
@@ -760,8 +695,10 @@
                         }, self.intervalTime);
                     } else{
                         self.speak('Game Paused!!!', 'US English Female');
-                        self.updatePickedNumbersOrSpeechStringInRoom('Game Paused!!!');
-                        self.checkAndStartPollingForUsersInformation();
+                        self.updateDataInRoom('Game Paused!!!', sessionStorage.getItem('gameStatus'));
+                        // self.updatePickedNumbersOrSpeechStringInRoom('Game Paused!!!');
+                        self.checkAndStartPollingForRoomAdmin();
+                        // self.checkAndStartPollingForUsersInformation();
                         clearInterval(self.interval);
                     } 
                 },
@@ -949,10 +886,12 @@
                 
                 // Reset all the picked numbers and removed colors
                 resetColors(action){
-                    var self = this;
+                    const self = this;
                     setTimeout(() => {
-                        const ask = true;
-                        if(action == !'noConfirmation'){
+                        let ask = false;
+                        if(action == 'noConfirmation'){
+                            ask = true;
+                        } else {
                             self.speak('Warning!! Taken numbers will get deleted', 'US English Male');
                             ask = confirm('Taken numbers will get deleted,sure?');
                         }
@@ -1001,6 +940,7 @@
                             self.checkBoard = true;
                             self.selectedPrizes = res.data.selectedPrizes;
                             // sessionStorage.setItem('ticketsPollingStarted', 'no');
+                            self.checkAndStartPollingForRoomAdmin();
                             // self.checkAndStartPollingForUsersInformation();
                         }
                         self.showSnackbar = true;
@@ -1029,15 +969,17 @@
                             self.roomUser = self.player;
                             sessionStorage.setItem('roomUser', self.player);
 
-                            self.roomMessages = res.roomMessages;
-                            self.selectedPrizes = res.selectedPrizes;
-                            sessionStorage.setItem('selectedPrizes', JSON.stringify(res.selectedPrizes));
+                            self.roomMessages = res.data.roomMessages;
+                            self.selectedPrizes = res.data.selectedPrizes;
+                            sessionStorage.setItem('selectedPrizes', JSON.stringify(res.data.selectedPrizes));
 
                             self.resetColors('noConfirmation');
                             self.usedTickets = [];
                             self.useTicket(self.player);
                             self.checkBoard = false;
                             
+                            self.checkAndStartPollingForRoomPlayer();
+
                             // // start polling for getting numbers
                             // const roomObjForNumbersPolling = {
                             //     room_id: self.roomID,
@@ -1075,84 +1017,31 @@
                         }).catch((err) => {
                             console.log(err);
                         });
-                        self.socket.on('roomExitError', (res) => {
-                            self.showSnackbar = true;
-                            self.snackbarType = res.type;
-                            self.snackbarMessage = res.message;
-                        });
                     }
                 },
                 exitRoomSuccess(){
                     const self = this;
                     if(self.status != null && self.status.startsWith('Room Created')){
-                        sessionStorage.setItem('ticketsPollingStarted', 'no');
+                        clearInterval(self.roomAdminPolling);
                     } else if(self.status != null && self.status.startsWith('Room Joined')){
-                        sessionStorage.setItem('numbersPollingStarted', 'no');
+                        clearInterval(self.roomPlayerPolling);
                     }
                     self.resetColors('noConfirmation');
                     self.checkBoard = true;
                     self.usedTickets = [];
                     self.status = null;
                 },
-                // polling
-                checkAndStartPollingForUsersInformation(){
-                    var self = this;
-                    if(self.status != null && self.status.startsWith('Room Created')){
-                        let gameStatus = sessionStorage.getItem('gameStatus') != null ? sessionStorage.getItem('gameStatus') : 'Game Not yet Started';
-                        if(self.previousNumbers.length > 0){
-                            if(self.autoPick){
-                                if(self.playGame){
-                                    gameStatus = 'Game Running';
-                                } else {
-                                    gameStatus = 'Game Paused';
-                                }
-                            } else {
-                                gameStatus = 'Game Paused';
-                            }
-                        } else if(self.previousNumbers.length == 90){
-                            gameStatus = 'Game Completed';
-                        }
-                        // update game status
-                        self.updateGameStatus(gameStatus);
-                        // start polling to get tickets or joined user's information
-                        if(gameStatus != 'Game Running'){
-                            if(sessionStorage.getItem('ticketsPollingStarted') == null || sessionStorage.getItem('ticketsPollingStarted') == 'no'){
-                                const roomObjForPolling = {
-                                    room_id: self.status.split(': ')[1],
-                                    token: sessionStorage.getItem('token'),
-                                    usedTicketsLength: self.usedTickets.length,
-                                    roomMessagesLength: self.roomMessages.length
-                                }
-                                self.socket.emit('startPollingForGetTickets', roomObjForPolling);
-                            }
-                            sessionStorage.setItem('ticketsPollingStarted', 'yes');
-                        } else {
-                            sessionStorage.setItem('ticketsPollingStarted', 'no');
-                        }
-                    }
-                },
-                updateGameStatus(gameStatus){
-                    const self = this;
-                    const gameStatusObj = {
-                        token: sessionStorage.getItem('token'),
-                        status: gameStatus
-                    }
-                    if(sessionStorage.getItem('gameStatus') == null || (sessionStorage.getItem('gameStatus') && gameStatus != sessionStorage.getItem('gameStatus'))){
-                        sessionStorage.setItem('gameStatus',gameStatus);
-                        self.socket.emit('changeGameStatus', gameStatusObj);
-                    }
-                },
-                updatePickedNumbersOrSpeechStringInRoom(speechString){
-                    const self = this;
-                    if(self.status != null && self.status.startsWith('Room Created')){
-                        const roomObj = {
-                            token: sessionStorage.getItem('token'),
-                            prevNumbers: self.previousNumbers,
-                            speechString: speechString
-                        }
-                        self.socket.emit('updatePrevNumbersInRoom', roomObj);
-                    }
-                },
+                // updatePickedNumbersOrSpeechStringInRoom(speechString){
+                //     const self = this;
+                //     if(self.status != null && self.status.startsWith('Room Created')){
+                //         const roomObj = {
+                //             token: sessionStorage.getItem('token'),
+                //             prevNumbers: self.previousNumbers,
+                //             speechString: speechString
+                //         }
+                //         self.socket.emit('updatePrevNumbersInRoom', roomObj);
+                //     }
+                // },
 
                 //markOnTicket
                 markOnTicket(id){
@@ -1196,7 +1085,7 @@
                         self.scrollToBottom('.scrollbar');
                         self.newMessage = '';
                         self.messageCount = 0;
-                        self.socket.emit('addRoomMessages', {token: sessionStorage.getItem('token'), roomMessages: self.roomMessages, room_id: sessionStorage.getItem('status').split(': ')[1]} );
+                        self.updateDataInRoom('', sessionStorage.getItem('gameStatus'));
                     }
                 },
                 scrollToBottom(id){
@@ -1250,16 +1139,180 @@
                     });
                 },
                 // function to update data of Room so that every user in room will get updated
-                updateDataInRoom(){
+                updateDataInRoom(speechString, gameStatus){
                     const self = this;
-                    axios.post('/updateRoomData',{
-                      token: sessionStorage.getItem('token'),
-                      status: sessionStorage.getItem('status'),  
-                    }).then((res) => {
+                    // room admin or player's in room
+                    // pickedNumbers, messages, speechStrings, gameStatus
+                    if(self.status != null && self.status.startsWith('Room')){
+                        axios.post('/updateRoomData',{
+                            token: sessionStorage.getItem('token'),
+                            status: sessionStorage.getItem('status'),  
+                            room_id: self.status.split(': ')[1],
+                            roomMessages: self.roomMessages,
+                            speechString: speechString,
+                            gameStatus: gameStatus,
+                            // in backend check for user status and update data
+                            pickedNumbers: self.previousNumbers
+                        }).then((res) => {
+                            if(res.data.showSnackbar){
+                                self.showSnackbar = true;
+                                self.snackbarMessage = res.data.snackbarMessage;
+                                self.snackbarType = res.data.snackbarType;
+                                if(res.data.snackbarType != "success" && !(res.data.snackbarMessage.startsWith('Action can\'t be performed'))){
+                                    self.exitRoomSuccess();
+                                }
+                            }
+                            console.log(res);
+                        }).catch((err) => {
+                            console.log(err);
+                        });
+                    }
+                },
+                //Room Admin Polling
+                checkAndStartPollingForRoomAdmin(){
+                    const self = this;
+                    if(self.status != null && self.status.startsWith('Room Created')){
+                        self.gameStatus = sessionStorage.getItem('gameStatus') != null ? sessionStorage.getItem('gameStatus') : 'Game Not yet Started';
+                        if(self.previousNumbers.length > 0){
+                            if(self.previousNumbers.length == 90){
+                                self.gameStatus = 'Game Completed';
+                            } else {
+                                if(self.autoPick){
+                                    if(self.playGame){
+                                        self.gameStatus = 'Game Running';
+                                    } else {
+                                        self.gameStatus = 'Game Paused';
+                                    }
+                                } else {
+                                    self.gameStatus = 'Game Paused';
+                                }
+                            }
+                        }
+                        // update game status
+                        self.updateGameStatus(self.gameStatus);
+                        if(self.roomAdminPolling == null){
+                            // start polling to get tickets or joined user's information
+                            self.roomAdminPolling = setInterval(() => {
+                                // check game status
+                                if(self.status != null && self.status.startsWith('Room Created')){
+                                    console.log('polling, game status => ', self.gameStatus);
+                                    if(self.gameStatus != 'Game Completed'){
+                                        self.getRoomDataForRoomAdmin();
+                                    } else {
+                                        self.showSnackbar = true;
+                                        self.snackbarType = 'info';
+                                        self.snackbarMessage = 'Game Completed, Exiting from room in 30 seconds';
+                                        setTimeout(() => {
+                                            self.exitRoomSuccess();
+                                            clearInterval(self.roomAdminPolling);
+                                        }, 30000);
+                                    }
+                                } else {
+                                    clearInterval(self.roomAdminPolling);
+                                }
+                            }, 4000);
+                        }
+                        
+                    } else {
+                        self.roomAdminPolling = null;
+                    }
+                },
+                updateGameStatus(gameStatus){
+                    const self = this;
+                    if(sessionStorage.getItem('gameStatus') == null || (sessionStorage.getItem('gameStatus') && gameStatus != sessionStorage.getItem('gameStatus'))){
+                        sessionStorage.setItem('gameStatus',gameStatus);
+                        self.updateDataInRoom('', gameStatus);
+                    }
+                },
+                getRoomDataForRoomAdmin(){
+                    const self = this;
+                    axios.post('/getRoomData', {
+                        token: sessionStorage.getItem('token'),
+                        status: sessionStorage.getItem('status')
+                    }).then( (res) => {
+                        if(res.data.showSnackbar){
+                            self.showSnackbar = true;
+                            self.snackbarMessage = res.data.snackbarMessage;
+                            self.snackbarType = res.data.snackbarType;
+                            self.exitRoomSuccess();
+                        } else {
+                            if(self.usedTickets.length < res.data.usedTickets.length){
+                                // user joined
+                                self.showSnackbar = true;
+                                self.snackbarMessage = res.data.usedTickets[(res.data.usedTickets).length-1].name+' joined';
+                                self.snackbarType = 'info';
+                            } else if(self.usedTickets.length > res.data.usedTickets.length){
+                                // someone exited
+                                self.showSnackbar = true;
+                                self.snackbarMessage = 'Someone exited';
+                                self.snackbarType = 'info';
+                            }
+                            self.usedTickets = res.data.usedTickets;
+                            self.messageCount = (res.data.roomMessages.length) - (self.roomMessages.length);
+                            self.roomMessages = res.data.roomMessages;
+                        }
                         console.log(res);
-                    }).catch((err) => {
+                    }).catch( (err) => {
                         console.log(err);
-                    })
+                    });
+                },
+                //Room Player polling
+                checkAndStartPollingForRoomPlayer(){
+                    const self = this;
+                    if(self.status != null && self.status.startsWith('Room Joined')){
+                        if(self.roomPlayerPolling == null){
+                            self.roomAdminPolling = setInterval(() => {
+                                if(self.status != null && self.status.startsWith('Room Joined')){
+                                    console.log('polling, prev num length => ', self.previousNumbers.length);
+                                    if(self.previousNumbers.length != 90){
+                                        self.getRoomDataForPlayers();
+                                    } else {
+                                        self.showSnackbar = true;
+                                        self.snackbarType = 'info';
+                                        self.snackbarMessage = 'Game Completed, Exiting from room in 30 seconds';
+                                        setTimeout(() => {
+                                            self.exitRoomSuccess();
+                                            clearInterval(self.roomPlayerPolling);
+                                        }, 30000);
+                                    }
+                                } else {
+                                    clearInterval(self.roomPlayerPolling);
+                                }
+                            }, 4000);
+                        }
+                    }
+                },
+                getRoomDataForPlayers(){
+                    const self = this;
+                    axios.post('/getRoomData', {
+                        token: sessionStorage.getItem('token'),
+                        status: sessionStorage.getItem('status')
+                    }).then( (res) => {
+                        if(res.data.showSnackbar){
+                            self.showSnackbar = true;
+                            self.snackbarMessage = res.data.snackbarMessage;
+                            self.snackbarType = res.data.snackbarType;
+                            self.exitRoomSuccess();
+                        } else {
+                            // this.selectedPrizes = res.data.selectedPrizes;
+                            if(self.previousNumbers < res.data.pickedNumbers){
+                                self.addColors();
+                                let pickedNumber = res.data.pickedNumbers[(res.data.pickedNumbers).length-1];
+                                if(pickedNumber > 9){
+                                    const speechString = pickedNumber.toString().substring(0,1)+' '+pickedNumber.toString().substring(1)+' . ';
+                                    self.speak((speechString+pickedNumber), 'US English Female');
+                                } else {
+                                    self.speak(('single number'+pickedNumber.toString()), 'US English Female');
+                                }
+                            }
+                            self.previousNumbers = res.data.pickedNumbers;
+                            self.messageCount = (res.data.roomMessages.length) - (self.roomMessages.length);
+                            self.roomMessages = res.data.roomMessages;
+                        }
+                        console.log(res);
+                    }).catch( (err) => {
+                        console.log(err);
+                    });
                 }
             }
         })

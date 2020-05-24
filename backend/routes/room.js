@@ -12,7 +12,7 @@ var activeTokens = utils.activeTokens;
 router.post('/createRoom', async (req,res) => {
   let roomObj = req.body;
   console.log('------------------create room logs start -----------------------');
-  console.log('Create Room Requested by'+roomObj.token);
+  console.log('Create Room Requested by '+roomObj.token);
   let activeTokenObj = activeTokens.find((tokenObj) => tokenObj.token == roomObj.token);
   if(!activeTokenObj){
     const resObj = {
@@ -161,7 +161,7 @@ router.post('/joinRoom', async (req,res) => {
                 usedTickets: roomData.usedTickets,
             }
           }, res).then( (data) => {
-            console.log(data, 'Updated User data Successfully');
+            console.log('Updated User data Successfully');
           });
           activeTokenObj.status = 'Room Joined';
           console.log('Successfully joined, updating active token status to "Room Joined"');
@@ -259,7 +259,7 @@ router.post('/exitRoom', async (req,res) => {
               usedTickets: usedTickets
           }
         }, res).then((data) => {
-          console.log(data, 'Successfully updated databse');
+          console.log('Successfully updated databse');
         })
         activeTokenObj.status = null;
         console.log('Successfully deleted, removing active token status from "Room Joined"');
@@ -296,8 +296,140 @@ router.post('/exitRoom', async (req,res) => {
   res.send(resObj);
 });
 
+// updating roomData
+router.post('/updateRoomData', async (req, res) => {
+  let roomObj = req.body;
+  let activeTokenObj = activeTokens.find((atknObj) => atknObj.token == roomObj.token);
+  if(!activeTokenObj){
+    const resObj = {
+      showSnackbar: true,
+      snackbarType: 'notFound',
+      snackbarMessage: 'Action can\'t be performed now, Please refresh your browser!!'
+    };
+    console.log(roomObj.token+' not in active tokens, so requested UI to refresh');
+    console.log('------------- update room data logs ends ----------------------');
+    res.send(resObj);
+  } else {
+    let roomData = [];
+    await roomService.findInDatabase({room_id:roomObj.room_id}, res).then((data) => {
+      roomData = data;
+    });
+    if(roomData){
+      // room exists
+      // check for status
+      if(roomObj.status != null){
+        if(roomObj.status.startsWith('Room Joined')){
+          // check for user availability
+          let user = roomData.users.find( (userObj) => userObj.token == roomObj.token);
+          if(user){
+            // continue
+          } else {
+            // user not found and exit room
+            const resObj = {
+              showSnackbar: true,
+              snackbarType: 'notFound',
+              snackbarMessage: 'User Deleted in Room, ask your admin!'
+            }
+            res.send(resObj);
+          }
+        }
+        roomData.roomMessages = roomObj.roomMessages;
+        roomData.speechString = roomObj.speechString;
+        roomData.gameStatus = roomObj.gameStatus;
+        if(roomObj.status != null && roomObj.status.startsWith('Room Created')){
+          roomData.prevNumbers = roomObj.pickedNumbers;
+        }
+        await roomService.updateInDatabase({ room_id:roomObj.room_id},{
+          $set: {
+            roomMessages: roomData.roomMessages,
+            speechString: roomData.speechString,
+            gameStatus: roomData.gameStatus,
+            prevNumbers: roomData.prevNumbers,
+          }
+        }, res).then( (data) => {
+          console.log('Updated Room data Successfully');
+        });
+        const resObj = {
+          showSnackbar: false,
+          message: 'Updated Successfully'
+        }
+        res.send(resObj);
+      }
+    } else {
+      // room deleted
+      const resObj = {
+        showSnackbar: true,
+        snackbarType: 'notFound',
+        snackbarMessage: 'Room was deleted create again!'
+      }
+      res.send(resObj);
+    }
+  }
+}, (error) => {
+  const resObj = {
+    showSnackbar: true,
+    snackbarType: 'notFound',
+    snackbarMessage: error
+  };
+  console.log(error, 'erroooooooooooooooor');
+  console.log('------------------update room logs end------------------');
+  res.send(resObj);
+});
 
 // polling for admin
+router.post('/getRoomData', async (req, res) => {
+  let roomObj = req.body;
+  let roomData = [];
+  await roomService.findInDatabase({room_id:roomObj.status.split(": ")[1]}, res).then((data) => {
+    roomData = data;
+  });
+  if(roomData){
+    // check status
+    if(roomObj.status.startsWith('Room Created')){
+      const resObj = {
+        showSnackbar: false,
+        usedTickets: roomData.usedTickets,
+        roomMessages: roomData.roomMessages
+      };
+      res.send(resObj);
+    } else {
+      let user = roomData.users.find((userObj) => userObj.token == roomObj.token);
+      if(user){
+        const resObj = {
+          showSnackbar: false,
+          pickedNumbers: roomData.prevNumbers,
+          roomMessages: roomData.roomMessages
+        };
+        res.send(resObj);
+      } else {
+        // user deleted in database
+        const resObj = {
+          showSnackbar: true,
+          snackbarType: 'notFound',
+          snackbarMessage: 'User Deleted!, join again!!'
+        };
+        res.send(resObj);
+      }
+    }
+  } else {
+    // room deleted in database
+    const resObj = {
+      showSnackbar: true,
+      snackbarType: 'notFound',
+      snackbarMessage: 'Room was Deleted!!!'
+    };
+    res.send(resObj);
+  }
+}, (error) => {
+  const resObj = {
+    showSnackbar: true,
+    snackbarType: 'notFound',
+    snackbarMessage: error
+  };
+  console.log(error, 'erroooooooooooooooor');
+  console.log('------------------get room data logs end------------------');
+  res.send(resObj);
+});
 // polling for user
 
 module.exports = router;
