@@ -13,8 +13,6 @@
     <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script>
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
-    <!-- <script src="https://cdn.jsdelivr.net/npm/vue-resource@1.5.1"></script> -->
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script> -->
     <style>
         table, tr>td{
             border: 2px solid indigo;
@@ -503,7 +501,6 @@
                 this.checkAndStartPollingForRoomPlayer();
             },
             mounted(){
-                console.log('mounted');
                 window.addEventListener('beforeunload', (event) => {
                     // Cancel the event as stated by the standard.
                     event.preventDefault();
@@ -517,10 +514,6 @@
                 window.addEventListener('load',(event) => {
                     this.clientReloaded();
                 });
-                // this.socket.on('updateRoomMessages', (res) => {
-                //     this.messageCount = (res.roomMessages.length) - (this.roomMessages.length);
-                //     this.roomMessages = res.roomMessages;
-                // });
             },
             computed: {
                 snackbarColor() {
@@ -572,7 +565,6 @@
                     roomMessages: [],
                     showInstructions: false,
                     showIntervalList: false,
-                    socket: null,
                     showRoompopup: false,
                     isCreate : false,
                     roomID: '',
@@ -600,9 +592,7 @@
                 },
                 previousNumbers(){
                     this.checkAndStartPollingForRoomAdmin();
-                    // this.checkAndStartPollingForUsersInformation();
                     this.updateDataInRoom('', sessionStorage.getItem('gameStatus'));
-                    // this.updatePickedNumbersOrSpeechStringInRoom('');
                 },
                 messageCount(){
                     console.log(this.messageCount);
@@ -939,14 +929,11 @@
                             self.useTicket(self.admin);
                             self.checkBoard = true;
                             self.selectedPrizes = res.data.selectedPrizes;
-                            // sessionStorage.setItem('ticketsPollingStarted', 'no');
                             self.checkAndStartPollingForRoomAdmin();
-                            // self.checkAndStartPollingForUsersInformation();
                         }
                         self.showSnackbar = true;
                         self.snackbarType = res.data.snackbarType;
                         self.snackbarMessage = res.data.snackbarMessage;
-                        console.log(res);
                     }).catch((err) => {
                         console.log(err);
                     });
@@ -979,21 +966,10 @@
                             self.checkBoard = false;
                             
                             self.checkAndStartPollingForRoomPlayer();
-
-                            // // start polling for getting numbers
-                            // const roomObjForNumbersPolling = {
-                            //     room_id: self.roomID,
-                            //     token: sessionStorage.getItem('token'),
-                            //     previousNumbersLength: self.previousNumbers.length,
-                            //     roomMessagesLength: self.roomMessages.length
-                            // }
-                            // self.socket.emit('startPollingForGetNumbers', roomObjForNumbersPolling);
-                            // sessionStorage.setItem('numbersPollingStarted', 'yes');
                         }
                         self.showSnackbar = true;
                         self.snackbarMessage = res.data.snackbarMessage;
                         self.snackbarType = res.data.snackbarType;
-                        console.log(res);
                     }).catch((err) => {
                         console.log(err);
                     });
@@ -1013,7 +989,6 @@
                             self.showSnackbar = true;
                             self.snackbarMessage = res.data.snackbarMessage;
                             self.snackbarType = res.data.snackbarType;
-                            console.log(res);
                         }).catch((err) => {
                             console.log(err);
                         });
@@ -1031,17 +1006,6 @@
                     self.usedTickets = [];
                     self.status = null;
                 },
-                // updatePickedNumbersOrSpeechStringInRoom(speechString){
-                //     const self = this;
-                //     if(self.status != null && self.status.startsWith('Room Created')){
-                //         const roomObj = {
-                //             token: sessionStorage.getItem('token'),
-                //             prevNumbers: self.previousNumbers,
-                //             speechString: speechString
-                //         }
-                //         self.socket.emit('updatePrevNumbersInRoom', roomObj);
-                //     }
-                // },
 
                 //markOnTicket
                 markOnTicket(id){
@@ -1122,7 +1086,7 @@
                         token: sessionStorage.getItem('token'),
                         status: sessionStorage.getItem('status')
                     }).then((res) => {
-                        console.log(res);
+                        // console.log(res);
                     }). catch((err) => {
                         console.log(err);
                     });
@@ -1133,7 +1097,7 @@
                         token: sessionStorage.getItem('token'),
                         status: sessionStorage.getItem('status')
                     }).then((res) => {
-                        console.log(res);
+                        // console.log(res);
                     }). catch((err) => {
                         console.log(err);
                     });
@@ -1162,7 +1126,6 @@
                                     self.exitRoomSuccess();
                                 }
                             }
-                            console.log(res);
                         }).catch((err) => {
                             console.log(err);
                         });
@@ -1195,7 +1158,6 @@
                             self.roomAdminPolling = setInterval(() => {
                                 // check game status
                                 if(self.status != null && self.status.startsWith('Room Created')){
-                                    console.log('polling, game status => ', self.gameStatus);
                                     if(self.gameStatus != 'Game Completed'){
                                         self.getRoomDataForRoomAdmin();
                                     } else {
@@ -1251,7 +1213,6 @@
                             self.messageCount = (res.data.roomMessages.length) - (self.roomMessages.length);
                             self.roomMessages = res.data.roomMessages;
                         }
-                        console.log(res);
                     }).catch( (err) => {
                         console.log(err);
                     });
@@ -1263,7 +1224,6 @@
                         if(self.roomPlayerPolling == null){
                             self.roomAdminPolling = setInterval(() => {
                                 if(self.status != null && self.status.startsWith('Room Joined')){
-                                    console.log('polling, prev num length => ', self.previousNumbers.length);
                                     if(self.previousNumbers.length != 90){
                                         self.getRoomDataForPlayers();
                                     } else {
@@ -1295,7 +1255,8 @@
                             self.exitRoomSuccess();
                         } else {
                             // this.selectedPrizes = res.data.selectedPrizes;
-                            if(self.previousNumbers < res.data.pickedNumbers){
+                            self.previousNumbers = res.data.pickedNumbers;
+                            if(self.previousNumbers.length < res.data.pickedNumbers.length){
                                 self.addColors();
                                 let pickedNumber = res.data.pickedNumbers[(res.data.pickedNumbers).length-1];
                                 if(pickedNumber > 9){
@@ -1305,11 +1266,9 @@
                                     self.speak(('single number'+pickedNumber.toString()), 'US English Female');
                                 }
                             }
-                            self.previousNumbers = res.data.pickedNumbers;
                             self.messageCount = (res.data.roomMessages.length) - (self.roomMessages.length);
                             self.roomMessages = res.data.roomMessages;
                         }
-                        console.log(res);
                     }).catch( (err) => {
                         console.log(err);
                     });

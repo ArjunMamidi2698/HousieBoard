@@ -376,7 +376,7 @@ router.post('/updateRoomData', async (req, res) => {
   res.send(resObj);
 });
 
-// polling for admin
+// polling for user // polling for admin 
 router.post('/getRoomData', async (req, res) => {
   let roomObj = req.body;
   let roomData = [];
@@ -430,6 +430,5 @@ router.post('/getRoomData', async (req, res) => {
   console.log('------------------get room data logs end------------------');
   res.send(resObj);
 });
-// polling for user
 
 module.exports = router;
